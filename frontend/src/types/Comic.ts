@@ -2,6 +2,14 @@ export type ComicStatus = 'Reading' | 'Completed' | 'On Hold' | 'Dropped';
 
 export const COMIC_STATUSES: ComicStatus[] = ['Reading', 'Completed', 'On Hold', 'Dropped'];
 
+/** Manga-themed captions shown in place of the plain tracker status names. */
+export const STATUS_LABELS: Record<ComicStatus, string> = {
+  Reading: 'On the Journey',
+  'On Hold': 'To Be Continued…',
+  Completed: 'Adventure Complete',
+  Dropped: 'Journey Abandoned',
+};
+
 export interface Comic {
   id: string;
   title: string;
@@ -16,6 +24,8 @@ export interface Comic {
   coverImageUrl: string;
   status: ComicStatus;
   isFavorite: boolean;
+  /** Vertical focal point for the cropped cover thumbnail, 0 (top) – 100 (bottom); 50 = centered. */
+  coverPosition: number;
 }
 
 export interface ParsedChapterInfo {

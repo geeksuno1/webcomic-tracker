@@ -175,6 +175,22 @@ export function ListIcon({ className = base }: IconProps) {
   );
 }
 
+export function SmallGridIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <rect x="3" y="3" width="4.5" height="4.5" rx="1" />
+      <rect x="9.75" y="3" width="4.5" height="4.5" rx="1" />
+      <rect x="16.5" y="3" width="4.5" height="4.5" rx="1" />
+      <rect x="3" y="9.75" width="4.5" height="4.5" rx="1" />
+      <rect x="9.75" y="9.75" width="4.5" height="4.5" rx="1" />
+      <rect x="16.5" y="9.75" width="4.5" height="4.5" rx="1" />
+      <rect x="3" y="16.5" width="4.5" height="4.5" rx="1" />
+      <rect x="9.75" y="16.5" width="4.5" height="4.5" rx="1" />
+      <rect x="16.5" y="16.5" width="4.5" height="4.5" rx="1" />
+    </svg>
+  );
+}
+
 export function GridIcon({ className = base }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
@@ -208,6 +224,15 @@ export function LinkIcon({ className = base }: IconProps) {
       <path d="M9 17H7A5 5 0 0 1 7 7h2" />
       <path d="M15 7h2a5 5 0 1 1 0 10h-2" />
       <path d="M8 12h8" />
+    </svg>
+  );
+}
+
+export function CompassIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="m15 9-2 6-6 2 2-6 6-2Z" />
     </svg>
   );
 }

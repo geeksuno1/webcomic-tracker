@@ -18,7 +18,7 @@ var HISTORY_SHEET_NAME = 'History';
 var COMICS_HEADERS = [
   'ID', 'Webcomic Name', 'Latest Completed Chapter', 'Latest Chapter URL',
   'Website', 'Domain', 'Date First Added', 'Date Last Updated', 'Notes',
-  'Normalized Title', 'Cover Image URL', 'Status', 'Favorite'
+  'Normalized Title', 'Cover Image URL', 'Status', 'Favorite', 'Cover Position'
 ];
 
 // Valid values for the Status column. Stored in the sheet exactly as written here.
@@ -402,6 +402,7 @@ function comicRowToObject_(row) {
     coverImageUrl: row['Cover Image URL'] || '',
     status: row['Status'] || DEFAULT_COMIC_STATUS,
     isFavorite: row['Favorite'] === true || row['Favorite'] === 'TRUE' || row['Favorite'] === 'true',
+    coverPosition: normalizeCoverPosition_(row['Cover Position']),
     _row: row._row
   };
 }
@@ -410,6 +411,13 @@ function comicRowToObject_(row) {
 function normalizeStatus_(status) {
   if (COMIC_STATUSES.indexOf(status) !== -1) return status;
   return DEFAULT_COMIC_STATUS;
+}
+
+/** Vertical focal point (0-100) for cropping the cover thumbnail; 50 = centered. */
+function normalizeCoverPosition_(value) {
+  var n = Number(value);
+  if (isNaN(n) || value === '' || value === null || value === undefined) return 50;
+  return Math.max(0, Math.min(100, Math.round(n)));
 }
 
 function formatDateCell_(val) {
@@ -472,7 +480,8 @@ function addComic(data) {
       normalizedTitle,
       data.coverImageUrl || '',
       normalizeStatus_(data.status),
-      !!data.isFavorite
+      !!data.isFavorite,
+      normalizeCoverPosition_(data.coverPosition)
     ];
     sheet.appendRow(row);
 
@@ -519,12 +528,15 @@ function updateComic(id, data) {
     var isFavorite = data.isFavorite !== undefined
       ? !!data.isFavorite
       : (target['Favorite'] === true || target['Favorite'] === 'TRUE' || target['Favorite'] === 'true');
+    var coverPosition = data.coverPosition !== undefined
+      ? normalizeCoverPosition_(data.coverPosition)
+      : normalizeCoverPosition_(target['Cover Position']);
 
     var rowNum = target._row;
-    // ID, Title, Chapter, URL, Website, Domain, FirstAdded, LastUpdated, Notes, NormalizedTitle, CoverImageUrl, Status, Favorite
-    sheet.getRange(rowNum, 2, 1, 12).setValues([[
+    // ID, Title, Chapter, URL, Website, Domain, FirstAdded, LastUpdated, Notes, NormalizedTitle, CoverImageUrl, Status, Favorite, CoverPosition
+    sheet.getRange(rowNum, 2, 1, 13).setValues([[
       title, chapter, url, website, domain,
-      target['Date First Added'], dateLastUpdated, notes, normalizedTitle, coverImageUrl || '', status, isFavorite
+      target['Date First Added'], dateLastUpdated, notes, normalizedTitle, coverImageUrl || '', status, isFavorite, coverPosition
     ]]);
 
     return getComic(id);
@@ -587,7 +599,7 @@ function addOrUpdateComic(data) {
       var row = [
         id, data.title, newChapter, data.url, website, domain,
         today, today, data.notes || '', normalizedTitle, data.coverImageUrl || '',
-        normalizeStatus_(data.status), !!data.isFavorite
+        normalizeStatus_(data.status), !!data.isFavorite, normalizeCoverPosition_(data.coverPosition)
       ];
       sheet.appendRow(row);
       addHistoryEntryUnlocked_({
@@ -626,14 +638,18 @@ function addOrUpdateComic(data) {
       ? normalizeStatus_(data.status)
       : (existing.status === 'Completed' && isSame ? existing.status : DEFAULT_COMIC_STATUS);
 
-    // A chapter-URL update (add/refresh) never touches the favorite flag — it's only
-    // ever changed explicitly, from the list/card star toggle or the edit form.
+    // A chapter-URL update (add/refresh) never touches the favorite flag or the
+    // cover crop position — those are only ever changed explicitly, from the
+    // list/card star toggle or the edit form.
     var isFavorite = data.isFavorite !== undefined ? !!data.isFavorite : existing.isFavorite;
+    var coverPosition = data.coverPosition !== undefined
+      ? normalizeCoverPosition_(data.coverPosition)
+      : normalizeCoverPosition_(existing.coverPosition);
 
-    sheet.getRange(existing._row, 2, 1, 12).setValues([[
+    sheet.getRange(existing._row, 2, 1, 13).setValues([[
       data.title, newChapter, data.url, website, domain,
       existing.dateFirstAdded, today, data.notes !== undefined ? data.notes : existing.notes,
-      normalizedTitle, coverImageUrl || '', status, isFavorite
+      normalizedTitle, coverImageUrl || '', status, isFavorite, coverPosition
     ]]);
 
     if (materialChange) {

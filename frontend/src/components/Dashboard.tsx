@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { ChevronDownIcon, DownloadIcon, MoonIcon, RefreshIcon, SunIcon, UploadIcon } from './Icons';
+import { LOGO_DATA_URI } from '../assets/logo';
 
 interface Props {
   darkMode: boolean;
@@ -23,7 +24,7 @@ export function DashboardShell({
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 h-14 w-14 shrink-0 overflow-hidden rounded-xl shadow-sm shadow-ink/30">
-            <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Manga Quest Log" className="h-full w-full object-cover" />
+            <img src={LOGO_DATA_URI} alt="Manga Quest Log" className="h-full w-full object-cover" />
           </div>
           <div>
             <h1 className="brand-title text-3xl sm:text-4xl">

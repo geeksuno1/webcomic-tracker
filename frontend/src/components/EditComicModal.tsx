@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import type { Comic } from '../types/Comic';
-import { COMIC_STATUSES } from '../types/Comic';
+import { COMIC_STATUSES, STATUS_LABELS } from '../types/Comic';
 import { HistoryIcon, PencilIcon, TrashIcon } from './Icons';
 import { CoverImagePicker } from './CoverImagePicker';
+import { CoverPositionAdjuster } from './CoverPositionAdjuster';
 
 interface Props {
   comic: Comic;
@@ -21,6 +22,7 @@ export function EditComicModal({ comic, onSave, onClose, onHistory, onDelete, bu
   const [dateLastUpdated, setDateLastUpdated] = useState(comic.dateLastUpdated);
   const [notes, setNotes] = useState(comic.notes || '');
   const [coverImageUrl, setCoverImageUrl] = useState(comic.coverImageUrl || '');
+  const [coverPosition, setCoverPosition] = useState(comic.coverPosition ?? 50);
   const [status, setStatus] = useState<Comic['status']>(comic.status || 'Reading');
 
   async function handleSubmit(e: React.FormEvent) {
@@ -29,7 +31,7 @@ export function EditComicModal({ comic, onSave, onClose, onHistory, onDelete, bu
     if (!title.trim() || isNaN(chapterNum) || !url.trim()) return;
     await onSave({
       title: title.trim(), chapter: chapterNum, url: url.trim(), website: website.trim(),
-      dateLastUpdated, notes: notes.trim(), coverImageUrl: coverImageUrl.trim(), status,
+      dateLastUpdated, notes: notes.trim(), coverImageUrl: coverImageUrl.trim(), status, coverPosition,
     });
   }
 
@@ -70,6 +72,13 @@ export function EditComicModal({ comic, onSave, onClose, onHistory, onDelete, bu
             <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Cover image</label>
             <CoverImagePicker value={coverImageUrl} onChange={setCoverImageUrl} filenameHint={title || 'cover'} size="sm" />
           </div>
+          {coverImageUrl && (
+            <CoverPositionAdjuster
+              coverImageUrl={coverImageUrl}
+              position={coverPosition}
+              onChange={setCoverPosition}
+            />
+          )}
           <LabeledInput label="Webcomic title" value={title} onChange={setTitle} required />
           <LabeledInput label="Chapter" type="number" step="0.5" value={chapter} onChange={setChapter} required />
           <LabeledInput label="Chapter URL" type="url" value={url} onChange={setUrl} required />
@@ -83,7 +92,7 @@ export function EditComicModal({ comic, onSave, onClose, onHistory, onDelete, bu
               onChange={(e) => setStatus(e.target.value as Comic['status'])}
             >
               {COMIC_STATUSES.map((s) => (
-                <option key={s} value={s}>{s}</option>
+                <option key={s} value={s}>{STATUS_LABELS[s]}</option>
               ))}
             </select>
           </div>

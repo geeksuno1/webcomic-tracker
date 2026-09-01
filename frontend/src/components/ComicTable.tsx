@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import type { Comic } from '../types/Comic';
+import { STATUS_LABELS } from '../types/Comic';
 import { formatDateReadable, daysSince } from '../services/normalization';
-import { CheckCircleIcon, ExternalLinkIcon, ImageOffIcon, LinkIcon, PauseIcon, PencilIcon, SearchIcon, StarIcon, XCircleIcon } from './Icons';
+import { CheckCircleIcon, CompassIcon, ExternalLinkIcon, ImageOffIcon, LinkIcon, PauseIcon, PencilIcon, SearchIcon, StarIcon, XCircleIcon } from './Icons';
 
 interface Props {
   comics: Comic[];
@@ -139,6 +140,7 @@ function CoverThumb({ comic, className = '', bare = false }: { comic: Comic; cla
           alt=""
           loading="lazy"
           className="h-full w-full object-cover"
+          style={{ objectPosition: `center ${comic.coverPosition ?? 50}%` }}
           onError={() => setFailed(true)}
         />
       ) : (
@@ -174,19 +176,19 @@ export function FavoriteToggle({
   );
 }
 
-/** Reading is the default/implicit status and gets no badge — only the exceptions are called out. */
+/** Manga-themed reading-status badge — every status gets one, including "Reading". */
 export function StatusBadge({ status, className = '' }: { status: Comic['status']; className?: string }) {
-  if (status === 'Reading') return null;
   const config = {
-    Completed: { icon: CheckCircleIcon, label: 'Complete', tint: 'bg-leaf/10 text-leaf' },
-    'On Hold': { icon: PauseIcon, label: 'On Hold', tint: 'bg-sky/10 text-sky' },
-    Dropped: { icon: XCircleIcon, label: 'Dropped', tint: 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400' },
+    Reading: { icon: CompassIcon, tint: 'bg-accent/10 text-accent' },
+    Completed: { icon: CheckCircleIcon, tint: 'bg-leaf/10 text-leaf' },
+    'On Hold': { icon: PauseIcon, tint: 'bg-sky/10 text-sky' },
+    Dropped: { icon: XCircleIcon, tint: 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400' },
   }[status];
   if (!config) return null;
   const Icon = config.icon;
   return (
     <span className={`chip ${config.tint} gap-1 align-middle font-semibold ${className}`}>
-      <Icon className="h-3 w-3" /> {config.label}
+      <Icon className="h-3 w-3" /> {STATUS_LABELS[status]}
     </span>
   );
 }

@@ -141,18 +141,34 @@ cream/ink/red-orange palette, condensed display type, and a few motion
 touches — kept mostly neutral so color stays reserved for status and
 actions rather than decoration.
 
-- **Reading status.** Every comic has a status — `Reading`, `Completed`,
-  `On Hold`, or `Dropped` — set from the dropdown in the Edit window.
-  `Reading` is the default and shows no badge; the other three get a small
-  colored badge next to the title in every view.
+- **Reading status.** Every comic has a status — shown everywhere (list,
+  cards, and the Favorites rail) with manga-themed captions instead of the
+  plain tracker names:
+
+  | Internal status | Shown as |
+  |---|---|
+  | Reading | On the Journey |
+  | On Hold | To Be Continued… |
+  | Completed | Adventure Complete |
+  | Dropped | Journey Abandoned |
+
+  Set it from the "Reading status" dropdown in the Edit window (the
+  dropdown shows the same captions; the sheet still stores the plain
+  internal name).
 - **Favorites.** Click the star on any comic — in the list, on a card, or
-  in the Edit window — to pin it. Favoriting is independent of the
+  in the Edit window — to bookmark it. Favoriting is independent of the
   add/update flow: pasting a new chapter URL for a comic never changes its
-  favorite state either way. Starred comics show up in a **Favorites**
-  rail on the right side of the page as mid-sized quick-access cards, with
-  a direct Open link and edit shortcut — no need to search or paginate to
-  reach the titles you check most often. The rail collapses below its own
-  content on narrower screens.
+  favorite state either way. Starred comics show up in the **Bookmarked
+  Quests** rail on the right side of the page for quick access, with three
+  sizes to choose from (the toggle in the rail's header, remembered
+  between visits): a dense **list**, compact **small tiles**, or richer
+  **medium tiles** with status and quick actions.
+- **Cover image repositioning.** Tall cover images can get awkwardly
+  cropped once they're squeezed into the wide list/card thumbnails. Open a
+  comic's Edit window and use the "Reposition cover in tiles" slider —
+  drag toward Top or Bottom to choose which part of the image stays
+  visible; the preview shows exactly what will be cropped. Applies
+  everywhere that comic's cover appears (list, cards, and favorites).
 - **"Chapter Unlocked" flash.** Saving a new chapter (not just refreshing
   the same one) shows a bold, book-themed toast instead of the usual
   quieter confirmation, held on screen long enough to actually read.
@@ -302,6 +318,7 @@ atomically even if two requests arrive close together.
 | K | Cover Image URL |
 | L | Status |
 | M | Favorite |
+| N | Cover Position |
 
 `Status` is one of `Reading`, `Completed`, `On Hold`, or `Dropped` (defaults
 to `Reading`). It's added automatically to existing sheets the next time the
@@ -315,6 +332,12 @@ whatever status it already had (so a `Completed` comic doesn't flip back to
 Unlike `Status`, it is never touched by the add/update-from-URL flow —
 pasting a new chapter link only ever changes title/chapter/URL/status; the
 favorite flag only changes when you explicitly click the star.
+
+`Cover Position` is a number from 0–100 (defaults to `50`, centered) marking
+the vertical focal point used when a cover image is cropped in list/card
+thumbnails. Like `Favorite`, it's never touched by the add/update-from-URL
+flow — only by dragging the "Reposition cover in tiles" slider in the Edit
+window.
 
 **`History`** (append-only log of every chapter update):
 
