@@ -19,7 +19,7 @@ export function CoverPositionAdjuster({ coverImageUrl, position, onChange }: Pro
         <img
           src={coverImageUrl}
           alt=""
-          className="h-24 w-full object-cover"
+          className="h-16 w-full object-cover"
           style={{ objectPosition: `center ${position}%` }}
         />
       </div>
@@ -45,7 +45,7 @@ export function CoverPositionAdjuster({ coverImageUrl, position, onChange }: Pro
         )}
       </div>
       <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-        Drag to show more of the top or bottom when the cover gets cropped in list and card view.
+        Adjusts what stays visible when the cover is cropped in list/card view.
       </p>
     </div>
   );

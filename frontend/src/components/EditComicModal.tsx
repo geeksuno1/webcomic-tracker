@@ -38,19 +38,19 @@ export function EditComicModal({ comic, onSave, onClose, onHistory, onDelete, bu
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm" onClick={onClose}>
       <form
-        className="card animate-in w-full max-w-md p-5"
+        className="card animate-in flex max-h-[80vh] w-full max-w-md flex-col overflow-hidden p-0"
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
       >
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="flex items-center gap-1.5 text-base font-semibold text-slate-900 dark:text-white">
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-ink/10 px-4 py-3 dark:border-white/10">
+          <h3 className="flex items-center gap-1.5 text-sm font-semibold text-slate-900 dark:text-white">
             <PencilIcon className="h-4 w-4 text-accent" /> Edit comic
           </h3>
           <div className="flex items-center gap-1.5">
             <button
               type="button"
               title="View history"
-              className="btn btn-secondary !px-2.5 !py-1.5 text-xs"
+              className="btn btn-secondary !px-2 !py-1 text-xs"
               onClick={() => onHistory(comic)}
               disabled={busy}
             >
@@ -59,7 +59,7 @@ export function EditComicModal({ comic, onSave, onClose, onHistory, onDelete, bu
             <button
               type="button"
               title="Delete"
-              className="btn btn-danger !px-2.5 !py-1.5 text-xs"
+              className="btn btn-danger !px-2 !py-1 text-xs"
               onClick={() => onDelete(comic)}
               disabled={busy}
             >
@@ -67,7 +67,8 @@ export function EditComicModal({ comic, onSave, onClose, onHistory, onDelete, bu
             </button>
           </div>
         </div>
-        <div className="mt-4 space-y-3">
+
+        <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto px-4 py-3">
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Cover image</label>
             <CoverImagePicker value={coverImageUrl} onChange={setCoverImageUrl} filenameHint={title || 'cover'} size="sm" />
@@ -113,7 +114,8 @@ export function EditComicModal({ comic, onSave, onClose, onHistory, onDelete, bu
             </p>
           </div>
         </div>
-        <div className="mt-5 flex justify-end gap-2">
+
+        <div className="flex shrink-0 justify-end gap-2 border-t border-ink/10 px-4 py-3 dark:border-white/10">
           <button type="button" className="btn btn-secondary" onClick={onClose} disabled={busy}>
             Cancel
           </button>

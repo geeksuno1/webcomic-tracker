@@ -103,6 +103,17 @@ h1, h2, h3 {
     dark:border-white/15 dark:bg-white/5 dark:text-[#F4F0E6] dark:placeholder:text-white/30;
 }
 
+/* <select> needs an opaque background: browsers render its native option
+   popup as its own layer, so a translucent (bg-white/5) background — fine
+   for text inputs sitting on the card — shows through as plain white there,
+   making dark-mode text unreadable against it. */
+select.input {
+  @apply bg-white dark:bg-[#211f1c];
+}
+select.input option {
+  @apply bg-white text-ink dark:bg-[#211f1c] dark:text-[#F4F0E6];
+}
+
 .card {
   @apply rounded-2xl border border-ink/10 bg-white shadow-sm shadow-ink/[0.03]
     dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20;

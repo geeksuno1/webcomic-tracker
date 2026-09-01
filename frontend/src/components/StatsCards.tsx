@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { Comic } from '../types/Comic';
 import { daysSince } from '../services/normalization';
-import { BookIcon, HistoryIcon, RefreshIcon, SparkleIcon } from './Icons';
+import { BookIcon, HistoryIcon, LayersIcon, RefreshIcon } from './Icons';
 
 export function StatsCards({ comics }: { comics: Comic[] }) {
   const stats = useMemo(() => {
@@ -9,13 +9,8 @@ export function StatsCards({ comics }: { comics: Comic[] }) {
     const updatedToday = comics.filter((c) => daysSince(c.dateLastUpdated) === 0).length;
     const updatedThisWeek = comics.filter((c) => daysSince(c.dateLastUpdated) <= 7).length;
     const sources = new Set(comics.map((c) => c.website || c.domain)).size;
-    let mostRecent: Comic | null = null;
-    for (const c of comics) {
-      if (!mostRecent || daysSince(c.dateLastUpdated) < daysSince(mostRecent.dateLastUpdated)) {
-        mostRecent = c;
-      }
-    }
-    return { total, updatedToday, updatedThisWeek, sources, mostRecent };
+    const totalChapters = comics.reduce((sum, c) => sum + (Number(c.chapter) || 0), 0);
+    return { total, updatedToday, updatedThisWeek, sources, totalChapters };
   }, [comics]);
 
   const cards = [
@@ -32,7 +27,9 @@ export function StatsCards({ comics }: { comics: Comic[] }) {
       tint: 'bg-sky/10 text-sky',
     },
     {
-      label: 'Recently Updated', value: stats.mostRecent ? stats.mostRecent.title : '—', small: true, icon: SparkleIcon,
+      label: 'Chapters Conquered',
+      value: Number.isInteger(stats.totalChapters) ? stats.totalChapters : stats.totalChapters.toFixed(1),
+      icon: LayersIcon,
       tint: 'bg-gold/15 text-[#a3720a] dark:text-gold',
     },
   ];
@@ -48,14 +45,7 @@ export function StatsCards({ comics }: { comics: Comic[] }) {
             <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
               {c.label}
             </div>
-            <div
-              className={
-                c.small
-                  ? 'mt-0.5 truncate text-sm font-semibold text-slate-800 dark:text-slate-100'
-                  : 'mt-0.5 text-2xl font-bold tracking-tight text-slate-900 dark:text-white'
-              }
-              title={c.small ? String(c.value) : undefined}
-            >
+            <div className="mt-0.5 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
               {c.value}
             </div>
           </div>

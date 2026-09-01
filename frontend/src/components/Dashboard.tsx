@@ -23,8 +23,8 @@ export function DashboardShell({
     <div className="mx-auto max-w-[1600px] px-4 py-6 sm:py-10">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-3">
-          <div className="mt-0.5 h-14 w-14 shrink-0 overflow-hidden rounded-xl shadow-sm shadow-ink/30">
-            <img src={LOGO_DATA_URI} alt="Manga Quest Log" className="h-full w-full object-cover" />
+          <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-ink shadow-sm shadow-ink/30 sm:h-24 sm:w-24">
+            <img src={LOGO_DATA_URI} alt="Manga Quest Log" className="h-full w-full object-contain p-1" />
           </div>
           <div>
             <h1 className="brand-title text-3xl sm:text-4xl">
