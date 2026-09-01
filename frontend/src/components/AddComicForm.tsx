@@ -108,7 +108,7 @@ export function AddComicForm({ comics, onSubmit, busy }: Props) {
     <form onSubmit={handleSubmit} className="card p-4 sm:p-5">
       <label htmlFor="chapter-url" className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
         <SparkleIcon className="h-4 w-4 text-accent" />
-        Paste latest chapter URL
+        Log Your Latest Read
       </label>
       <div className="mt-2 flex flex-col gap-2 sm:flex-row">
         <input
@@ -122,7 +122,7 @@ export function AddComicForm({ comics, onSubmit, busy }: Props) {
           disabled={busy}
         />
         <button type="submit" className="btn btn-primary sm:w-40" disabled={!canSubmit || busy}>
-          {busy ? 'Saving…' : 'Add / Update'}
+          {busy ? 'Saving…' : 'Log It'}
         </button>
       </div>
 
@@ -137,7 +137,7 @@ export function AddComicForm({ comics, onSubmit, busy }: Props) {
           {isNewEntry ? (
             <div>
               <div className="mb-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
-                Cover — auto-detected when possible, or upload / paste your own
+                Cover Art — auto-fetched, or add your own
               </div>
               <CoverImagePicker
                 value={coverImageUrl}
@@ -154,9 +154,9 @@ export function AddComicForm({ comics, onSubmit, busy }: Props) {
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="sm:col-span-3 text-xs font-medium text-slate-500 dark:text-slate-400">
-              Detected — correct anything that's wrong before saving
+              Scanned Details — fix anything before saving
             </div>
-            <Field label="Webcomic">
+            <Field label="Title">
               <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} />
               {!parsed.titleDetected && (
                 <span className="mt-1 block text-xs text-amber-600 dark:text-amber-400">
@@ -178,11 +178,11 @@ export function AddComicForm({ comics, onSubmit, busy }: Props) {
                 </span>
               )}
             </Field>
-            <Field label="Website">
+            <Field label="Source">
               <input className="input" value={website} onChange={(e) => setWebsite(e.target.value)} />
             </Field>
             <div className="sm:col-span-3">
-              <Field label="Alternate source (optional)">
+              <Field label="Backup Portal (optional)">
                 <input
                   className="input"
                   type="url"

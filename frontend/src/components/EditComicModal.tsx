@@ -70,7 +70,7 @@ export function EditComicModal({ comic, onSave, onClose, onHistory, onDelete, bu
 
         <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto px-4 py-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Cover image</label>
+            <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Cover Art</label>
             <CoverImagePicker value={coverImageUrl} onChange={setCoverImageUrl} filenameHint={title || 'cover'} size="sm" />
           </div>
           {coverImageUrl && (
@@ -80,13 +80,13 @@ export function EditComicModal({ comic, onSave, onClose, onHistory, onDelete, bu
               onChange={setCoverPosition}
             />
           )}
-          <LabeledInput label="Webcomic title" value={title} onChange={setTitle} required />
+          <LabeledInput label="Title" value={title} onChange={setTitle} required />
           <LabeledInput label="Chapter" type="number" step="0.5" value={chapter} onChange={setChapter} required />
-          <LabeledInput label="Chapter URL" type="url" value={url} onChange={setUrl} required />
-          <LabeledInput label="Website" value={website} onChange={setWebsite} />
-          <LabeledInput label="Date last updated" type="date" value={dateLastUpdated} onChange={setDateLastUpdated} />
+          <LabeledInput label="Latest Chapter Link" type="url" value={url} onChange={setUrl} required />
+          <LabeledInput label="Source" value={website} onChange={setWebsite} />
+          <LabeledInput label="Last Dropped On" type="date" value={dateLastUpdated} onChange={setDateLastUpdated} />
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Reading status</label>
+            <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Journey Status</label>
             <select
               className="input"
               value={status}
@@ -99,7 +99,7 @@ export function EditComicModal({ comic, onSave, onClose, onHistory, onDelete, bu
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
-              Alternate source (optional)
+              Backup Portal (optional)
             </label>
             <input
               className="input"

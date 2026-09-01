@@ -39,7 +39,7 @@ export function CoverImagePicker({ value, onChange, autoLoading = false, filenam
       const base64 = dataUrl.replace(/^data:[^,]+,/, '');
       const result = await api.uploadCoverImage(base64, file.type, filenameHint);
       onChange(result.url);
-      toast.show('Cover image uploaded.', 'success');
+      toast.show('Cover art uploaded.', 'success');
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'Could not upload that image. Please try again.';
       toast.show(message, 'error');

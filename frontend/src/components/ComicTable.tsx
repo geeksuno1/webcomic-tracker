@@ -258,7 +258,7 @@ function RowActions({ comic, onEdit }: { comic: Comic; onEdit: (c: Comic) => voi
           href={resolveAltHref(comic.notes)}
           target="_blank"
           rel="noopener noreferrer"
-          title={`Alternate source: ${comic.notes}`}
+          title={`Backup portal: ${comic.notes}`}
           className="btn btn-secondary !px-2.5 !py-1.5 text-xs"
         >
           <LinkIcon className="h-3.5 w-3.5" />

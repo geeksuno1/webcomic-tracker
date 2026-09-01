@@ -15,15 +15,15 @@ export function StatsCards({ comics }: { comics: Comic[] }) {
 
   const cards = [
     {
-      label: 'Total Comics', value: stats.total, icon: BookIcon,
+      label: 'Titles in the Log', value: stats.total, icon: BookIcon,
       tint: 'bg-accent/10 text-accent',
     },
     {
-      label: 'Updated This Week', value: stats.updatedThisWeek, icon: RefreshIcon,
+      label: 'Fresh Drops This Week', value: stats.updatedThisWeek, icon: RefreshIcon,
       tint: 'bg-leaf/10 text-leaf',
     },
     {
-      label: 'Sources', value: stats.sources, icon: HistoryIcon,
+      label: 'Guilds Followed', value: stats.sources, icon: HistoryIcon,
       tint: 'bg-sky/10 text-sky',
     },
     {

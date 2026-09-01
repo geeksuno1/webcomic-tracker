@@ -42,11 +42,11 @@ export function HistoryModal({ comic, onClose }: Props) {
           {!error && entries === null && (
             <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
               <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              Loading history…
+              Pulling up the log…
             </div>
           )}
           {entries && entries.length === 0 && (
-            <p className="text-sm text-slate-500 dark:text-slate-400">No history recorded yet for this comic.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">No entries logged yet for this quest.</p>
           )}
           {entries && entries.map((h) => (
             <a

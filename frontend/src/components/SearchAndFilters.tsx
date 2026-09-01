@@ -14,23 +14,23 @@ interface Props {
 }
 
 const DATE_FILTERS: { value: DateFilter; label: string }[] = [
-  { value: 'all', label: 'All time' },
-  { value: 'today', label: 'Updated today' },
-  { value: 'week', label: 'Updated this week' },
-  { value: '14', label: 'Not updated in 14+ days' },
-  { value: '30', label: 'Not updated in 30+ days' },
-  { value: '60', label: 'Not updated in 60+ days' },
-  { value: '90', label: 'Not updated in 90+ days' },
+  { value: 'all', label: 'Full Archive' },
+  { value: 'today', label: 'Dropped Today' },
+  { value: 'week', label: 'Dropped This Week' },
+  { value: '14', label: 'Quiet 14+ Days' },
+  { value: '30', label: 'Quiet 30+ Days' },
+  { value: '60', label: 'Quiet 60+ Days' },
+  { value: '90', label: 'Quiet 90+ Days' },
 ];
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: 'recently-updated', label: 'Most recently updated' },
-  { value: 'least-recently-updated', label: 'Least recently updated' },
-  { value: 'name-asc', label: 'Name A–Z' },
-  { value: 'name-desc', label: 'Name Z–A' },
-  { value: 'highest-chapter', label: 'Highest chapter' },
-  { value: 'lowest-chapter', label: 'Lowest chapter' },
-  { value: 'website', label: 'Website' },
+  { value: 'recently-updated', label: 'Newest Chapters First' },
+  { value: 'least-recently-updated', label: 'Oldest Chapters First' },
+  { value: 'name-asc', label: 'Title A–Z' },
+  { value: 'name-desc', label: 'Title Z–A' },
+  { value: 'highest-chapter', label: 'Furthest in Story' },
+  { value: 'lowest-chapter', label: 'Earliest in Story' },
+  { value: 'website', label: 'Source' },
 ];
 
 export function SearchAndFilters({
@@ -44,7 +44,7 @@ export function SearchAndFilters({
         <input
           type="text"
           className="input pl-9 pr-9"
-          placeholder="Search by title, website, or domain…"
+          placeholder="Search your library…"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           aria-label="Search comics"

@@ -11,7 +11,7 @@ export function ViewToggle({ value, onChange }: Props) {
   return (
     <div className="inline-flex items-center gap-0.5 rounded-lg border border-slate-200 bg-white p-0.5 dark:border-slate-700 dark:bg-slate-900">
       <ToggleButton label="List" icon={<ListIcon className="h-3.5 w-3.5" />} active={value === 'list'} onClick={() => onChange('list')} />
-      <ToggleButton label="Cards" icon={<GridIcon className="h-3.5 w-3.5" />} active={value === 'cards'} onClick={() => onChange('cards')} />
+      <ToggleButton label="Tiles" icon={<GridIcon className="h-3.5 w-3.5" />} active={value === 'cards'} onClick={() => onChange('cards')} />
     </div>
   );
 }
