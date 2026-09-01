@@ -12,6 +12,7 @@ import { api, ApiError } from './services/api';
 import type { Comic, DateFilter, SortOption } from './types/Comic';
 import { daysSince } from './services/normalization';
 import { exportComicsAsCsv, exportComicsAsJson, parseImportedJson } from './services/export';
+import { AlertIcon, RefreshIcon } from './components/Icons';
 
 function useDarkMode() {
   const [dark, setDark] = useState<boolean>(() => {
@@ -53,7 +54,7 @@ function AppInner() {
 
   const [savingAdd, setSavingAdd] = useState(false);
   const [pendingLowerChapter, setPendingLowerChapter] = useState<null | {
-    title: string; chapter: number; url: string; website: string; domain: string; warning: string;
+    title: string; chapter: number; url: string; website: string; domain: string; coverImageUrl?: string; warning: string;
   }>(null);
 
   const [editingComic, setEditingComic] = useState<Comic | null>(null);
@@ -140,7 +141,7 @@ function AppInner() {
   }, [comics, search, websiteFilter, dateFilter, sort]);
 
   async function submitAddOrUpdate(
-    info: { title: string; chapter: number; url: string; website: string; domain: string },
+    info: { title: string; chapter: number; url: string; website: string; domain: string; coverImageUrl?: string },
     forceOverwrite = false
   ) {
     setSavingAdd(true);
@@ -234,9 +235,12 @@ function AppInner() {
       onImportJson={handleImportJson}
     >
       {!api.isConfigured() && (
-        <div className="card border-amber-300 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
-          <strong>Backend not configured.</strong> Set <code>VITE_APPS_SCRIPT_URL</code> in your <code>.env</code> file
-          to your deployed Google Apps Script Web App URL, then rebuild. See the README for setup steps.
+        <div className="card flex items-start gap-3 border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-500/10 dark:text-amber-300">
+          <AlertIcon className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            <strong className="font-semibold">Backend not configured.</strong> Set <code className="rounded bg-amber-100 px-1 py-0.5 dark:bg-amber-900/40">VITE_APPS_SCRIPT_URL</code> in your <code className="rounded bg-amber-100 px-1 py-0.5 dark:bg-amber-900/40">.env</code> file
+            to your deployed Google Apps Script Web App URL, then rebuild. See the README for setup steps.
+          </p>
         </div>
       )}
 
@@ -257,17 +261,19 @@ function AppInner() {
       />
 
       {loading ? (
-        <div className="card p-10 text-center text-sm text-slate-500 dark:text-slate-400">
+        <div className="card flex flex-col items-center gap-3 p-12 text-center text-sm text-slate-500 dark:text-slate-400">
+          <span className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
           Loading comics from Google Sheets…
         </div>
       ) : loadError ? (
-        <div className="card border-rose-300 p-6 text-center text-sm text-rose-700 dark:border-rose-800 dark:text-rose-300">
-          {loadError}
-          <div className="mt-3">
-            <button type="button" className="btn btn-secondary" onClick={() => loadComics()}>
-              Try again
-            </button>
+        <div className="card flex flex-col items-center gap-3 border-rose-200 p-8 text-center text-sm text-rose-700 dark:border-rose-900 dark:text-rose-300">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-50 dark:bg-rose-500/10">
+            <AlertIcon className="h-5 w-5" />
           </div>
+          {loadError}
+          <button type="button" className="btn btn-secondary" onClick={() => loadComics()}>
+            <RefreshIcon className="h-3.5 w-3.5" /> Try again
+          </button>
         </div>
       ) : (
         <ComicTable

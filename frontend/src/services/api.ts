@@ -77,6 +77,16 @@ export const api = {
     return get<HistoryEntry[]>('getHistory', { comicId });
   },
 
+  /** Asks the backend to fetch the page and pull a cover image URL out of it. */
+  async fetchCoverImage(url: string): Promise<string> {
+    try {
+      const result = await get<{ url: string }>('fetchCoverImage', { url });
+      return result?.url || '';
+    } catch {
+      return '';
+    }
+  },
+
   async addOrUpdateComic(data: {
     title: string;
     chapter: number;
@@ -84,6 +94,7 @@ export const api = {
     website: string;
     domain: string;
     notes?: string;
+    coverImageUrl?: string;
     forceOverwrite?: boolean;
   }): Promise<AddOrUpdateResult> {
     return post<AddOrUpdateResult>('addOrUpdateComic', data);

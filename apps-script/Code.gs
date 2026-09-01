@@ -18,7 +18,7 @@ var HISTORY_SHEET_NAME = 'History';
 var COMICS_HEADERS = [
   'ID', 'Webcomic Name', 'Latest Completed Chapter', 'Latest Chapter URL',
   'Website', 'Domain', 'Date First Added', 'Date Last Updated', 'Notes',
-  'Normalized Title'
+  'Normalized Title', 'Cover Image URL'
 ];
 
 var HISTORY_HEADERS = [
@@ -46,6 +46,9 @@ function doGet(e) {
         break;
       case 'getHistory':
         result = getHistory(e.parameter.comicId);
+        break;
+      case 'fetchCoverImage':
+        result = { url: fetchCoverImageFromUrl_(e.parameter.url) };
         break;
       default:
         return jsonResponse(apiError('Unknown or missing action: ' + action));
@@ -131,7 +134,25 @@ function getOrCreateSheet_(name, headers) {
 }
 
 function getComicsSheet_() {
-  return getOrCreateSheet_(COMICS_SHEET_NAME, COMICS_HEADERS);
+  var sheet = getOrCreateSheet_(COMICS_SHEET_NAME, COMICS_HEADERS);
+  ensureComicsHeaders_(sheet);
+  return sheet;
+}
+
+/**
+ * Migration helper: if this sheet was created before the "Cover Image URL"
+ * column existed, add any missing headers from COMICS_HEADERS onto the end
+ * without touching existing data.
+ */
+function ensureComicsHeaders_(sheet) {
+  var lastCol = Math.max(sheet.getLastColumn(), 1);
+  var existing = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  for (var i = 0; i < COMICS_HEADERS.length; i++) {
+    if (existing.indexOf(COMICS_HEADERS[i]) === -1) {
+      sheet.getRange(1, lastCol + 1).setValue(COMICS_HEADERS[i]);
+      lastCol++;
+    }
+  }
 }
 
 function getHistorySheet_() {
@@ -238,6 +259,72 @@ function websiteNameFromDomain_(domain) {
 }
 
 // ---------------------------------------------------------------------------
+// COVER IMAGE FETCHING
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetches a chapter page server-side (avoids browser CORS restrictions) and
+ * pulls a cover/thumbnail image URL out of its <meta property="og:image">
+ * or <meta name="twitter:image"> tag, falling back to the first plausible
+ * <img> tag on the page. Returns '' if nothing usable is found or the page
+ * can't be fetched.
+ */
+function fetchCoverImageFromUrl_(url) {
+  if (!isValidUrl_(url)) return '';
+  try {
+    var response = UrlFetchApp.fetch(url, {
+      muteHttpExceptions: true,
+      followRedirects: true,
+      validateHttpsCertificates: true,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; WebcomicTrackerBot/1.0)'
+      }
+    });
+    if (response.getResponseCode() >= 400) return '';
+    var html = response.getContentText();
+
+    var ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+      || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+    if (ogMatch && ogMatch[1]) return resolveUrl_(url, ogMatch[1]);
+
+    var twitterMatch = html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i)
+      || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i);
+    if (twitterMatch && twitterMatch[1]) return resolveUrl_(url, twitterMatch[1]);
+
+    // Fallback: first reasonably large-looking <img> tag in the main content.
+    var imgMatches = html.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi) || [];
+    for (var i = 0; i < imgMatches.length; i++) {
+      var srcMatch = imgMatches[i].match(/src=["']([^"']+)["']/i);
+      if (!srcMatch) continue;
+      var src = srcMatch[1];
+      if (/\.(svg|gif)(\?|$)/i.test(src)) continue; // skip icons/logos
+      if (/logo|icon|avatar|sprite/i.test(src)) continue;
+      return resolveUrl_(url, src);
+    }
+
+    return '';
+  } catch (err) {
+    return '';
+  }
+}
+
+/** Resolves a possibly-relative image URL against the page URL it came from. */
+function resolveUrl_(pageUrl, imageUrl) {
+  if (/^https?:\/\//i.test(imageUrl)) return imageUrl;
+  try {
+    if (imageUrl.indexOf('//') === 0) {
+      var scheme = pageUrl.match(/^https?:/i)[0];
+      return scheme + imageUrl;
+    }
+    var origin = pageUrl.match(/^https?:\/\/[^\/]+/i)[0];
+    if (imageUrl.indexOf('/') === 0) return origin + imageUrl;
+    return origin + '/' + imageUrl;
+  } catch (err) {
+    return imageUrl;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // COMICS CRUD
 // ---------------------------------------------------------------------------
 
@@ -253,6 +340,7 @@ function comicRowToObject_(row) {
     dateLastUpdated: formatDateCell_(row['Date Last Updated']),
     notes: row['Notes'] || '',
     normalizedTitle: row['Normalized Title'],
+    coverImageUrl: row['Cover Image URL'] || '',
     _row: row._row
   };
 }
@@ -314,7 +402,8 @@ function addComic(data) {
       today,
       today,
       data.notes || '',
-      normalizedTitle
+      normalizedTitle,
+      data.coverImageUrl || ''
     ];
     sheet.appendRow(row);
 
@@ -356,12 +445,13 @@ function updateComic(id, data) {
     var notes = data.notes !== undefined ? data.notes : target['Notes'];
     var dateLastUpdated = data.dateLastUpdated || todayStr_();
     var normalizedTitle = normalizeTitle_(title);
+    var coverImageUrl = data.coverImageUrl !== undefined ? data.coverImageUrl : target['Cover Image URL'];
 
     var rowNum = target._row;
-    // ID, Title, Chapter, URL, Website, Domain, FirstAdded, LastUpdated, Notes, NormalizedTitle
-    sheet.getRange(rowNum, 2, 1, 9).setValues([[
+    // ID, Title, Chapter, URL, Website, Domain, FirstAdded, LastUpdated, Notes, NormalizedTitle, CoverImageUrl
+    sheet.getRange(rowNum, 2, 1, 10).setValues([[
       title, chapter, url, website, domain,
-      target['Date First Added'], dateLastUpdated, notes, normalizedTitle
+      target['Date First Added'], dateLastUpdated, notes, normalizedTitle, coverImageUrl || ''
     ]]);
 
     return getComic(id);
@@ -423,7 +513,7 @@ function addOrUpdateComic(data) {
       var id = generateId_('comic');
       var row = [
         id, data.title, newChapter, data.url, website, domain,
-        today, today, data.notes || '', normalizedTitle
+        today, today, data.notes || '', normalizedTitle, data.coverImageUrl || ''
       ];
       sheet.appendRow(row);
       addHistoryEntryUnlocked_({
@@ -452,11 +542,14 @@ function addOrUpdateComic(data) {
     var urlChanged = existing.url !== data.url;
     var websiteChanged = existing.website !== website;
     var materialChange = !isSame || urlChanged || websiteChanged;
+    var coverImageUrl = data.coverImageUrl !== undefined && data.coverImageUrl !== ''
+      ? data.coverImageUrl
+      : existing.coverImageUrl;
 
-    sheet.getRange(existing._row, 2, 1, 9).setValues([[
+    sheet.getRange(existing._row, 2, 1, 10).setValues([[
       data.title, newChapter, data.url, website, domain,
       existing.dateFirstAdded, today, data.notes !== undefined ? data.notes : existing.notes,
-      normalizedTitle
+      normalizedTitle, coverImageUrl || ''
     ]]);
 
     if (materialChange) {

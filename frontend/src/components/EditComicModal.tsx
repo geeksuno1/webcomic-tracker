@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Comic } from '../types/Comic';
+import { ImageOffIcon, PencilIcon } from './Icons';
 
 interface Props {
   comic: Comic;
@@ -15,23 +16,53 @@ export function EditComicModal({ comic, onSave, onClose, busy }: Props) {
   const [website, setWebsite] = useState(comic.website);
   const [dateLastUpdated, setDateLastUpdated] = useState(comic.dateLastUpdated);
   const [notes, setNotes] = useState(comic.notes || '');
+  const [coverImageUrl, setCoverImageUrl] = useState(comic.coverImageUrl || '');
+  const [coverFailed, setCoverFailed] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const chapterNum = parseFloat(chapter);
     if (!title.trim() || isNaN(chapterNum) || !url.trim()) return;
-    await onSave({ title: title.trim(), chapter: chapterNum, url: url.trim(), website: website.trim(), dateLastUpdated, notes });
+    await onSave({
+      title: title.trim(), chapter: chapterNum, url: url.trim(), website: website.trim(),
+      dateLastUpdated, notes, coverImageUrl: coverImageUrl.trim(),
+    });
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm" onClick={onClose}>
       <form
-        className="card w-full max-w-md p-5"
+        className="card animate-in w-full max-w-md p-5"
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
       >
-        <h3 className="text-base font-semibold">Edit comic</h3>
+        <h3 className="flex items-center gap-1.5 text-base font-semibold text-slate-900 dark:text-white">
+          <PencilIcon className="h-4 w-4 text-indigo-500" /> Edit comic
+        </h3>
         <div className="mt-4 space-y-3">
+          <div className="flex gap-3">
+            <div className="h-24 w-16 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
+              {coverImageUrl && !coverFailed ? (
+                <img
+                  src={coverImageUrl}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  onError={() => setCoverFailed(true)}
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-slate-300 dark:text-slate-600">
+                  <ImageOffIcon className="h-6 w-6" />
+                </div>
+              )}
+            </div>
+            <div className="flex-1">
+              <LabeledInput
+                label="Cover image URL"
+                value={coverImageUrl}
+                onChange={(v) => { setCoverImageUrl(v); setCoverFailed(false); }}
+              />
+            </div>
+          </div>
           <LabeledInput label="Webcomic title" value={title} onChange={setTitle} required />
           <LabeledInput label="Chapter" type="number" step="0.5" value={chapter} onChange={setChapter} required />
           <LabeledInput label="Chapter URL" type="url" value={url} onChange={setUrl} required />

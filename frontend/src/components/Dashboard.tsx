@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { BookIcon, ChevronDownIcon, DownloadIcon, MoonIcon, RefreshIcon, SunIcon, UploadIcon } from './Icons';
 
 interface Props {
   darkMode: boolean;
@@ -19,39 +20,63 @@ export function DashboardShell({
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:py-10">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-            Webcomic Tracker
-          </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Never forget where you stopped reading.
-          </p>
+        <div className="flex items-start gap-3">
+          <div
+            className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-sm shadow-indigo-600/30"
+            style={{ backgroundImage: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+            aria-hidden="true"
+          >
+            <BookIcon className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+              Webcomic Tracker
+            </h1>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Never forget where you stopped reading.
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           {lastSynced && (
-            <span className="text-xs text-slate-400 dark:text-slate-500">
-              Last synced: {lastSynced.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            <span className="hidden text-xs text-slate-400 dark:text-slate-500 sm:inline">
+              Last synced&nbsp;
+              {lastSynced.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
           <button type="button" className="btn btn-secondary" onClick={onRefresh} disabled={refreshing}>
-            {refreshing ? 'Refreshing…' : '↻ Refresh'}
+            <RefreshIcon className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            {refreshing ? 'Refreshing' : 'Refresh'}
           </button>
           <button type="button" className="btn btn-secondary" onClick={onToggleDarkMode} aria-label="Toggle dark mode">
-            {darkMode ? '☀️ Light' : '🌙 Dark'}
+            {darkMode ? <SunIcon /> : <MoonIcon />}
+            {darkMode ? 'Light' : 'Dark'}
           </button>
           <div className="relative">
             <details className="group">
-              <summary className="btn btn-secondary cursor-pointer list-none">Import / Export ▾</summary>
-              <div className="card absolute right-0 z-20 mt-1 w-44 p-1 text-sm">
-                <button type="button" className="block w-full rounded-md px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-800" onClick={onExportJson}>
-                  Export JSON
+              <summary className="btn btn-secondary cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                <DownloadIcon />
+                Import / Export
+                <ChevronDownIcon className="h-3.5 w-3.5 text-slate-400 transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="card animate-in absolute right-0 z-20 mt-1.5 w-48 p-1.5 text-sm">
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                  onClick={onExportJson}
+                >
+                  <DownloadIcon className="h-4 w-4 text-slate-400" /> Export JSON
                 </button>
-                <button type="button" className="block w-full rounded-md px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-800" onClick={onExportCsv}>
-                  Export CSV
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                  onClick={onExportCsv}
+                >
+                  <DownloadIcon className="h-4 w-4 text-slate-400" /> Export CSV
                 </button>
-                <label className="block w-full cursor-pointer rounded-md px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-800">
-                  Import JSON
+                <label className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800">
+                  <UploadIcon className="h-4 w-4 text-slate-400" /> Import JSON
                   <input
                     type="file"
                     accept="application/json"

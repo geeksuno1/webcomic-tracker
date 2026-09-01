@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
+import { AlertIcon, CheckCircleIcon, InfoIcon } from './Icons';
 
 type ToastKind = 'success' | 'error' | 'info';
 
@@ -41,16 +42,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             key={t.id}
             role="status"
             className={
-              'card flex items-start gap-2 px-4 py-3 text-sm shadow-lg animate-in fade-in slide-in-from-bottom-2 ' +
+              'card animate-in flex items-start gap-2.5 px-4 py-3 text-sm shadow-lg ' +
               (t.kind === 'success'
-                ? 'border-emerald-300 text-emerald-800 dark:border-emerald-800 dark:text-emerald-300'
+                ? 'border-emerald-200 text-emerald-800 dark:border-emerald-900 dark:text-emerald-300'
                 : t.kind === 'error'
-                ? 'border-rose-300 text-rose-800 dark:border-rose-800 dark:text-rose-300'
+                ? 'border-rose-200 text-rose-800 dark:border-rose-900 dark:text-rose-300'
                 : '')
             }
           >
-            <span className="mt-0.5">
-              {t.kind === 'success' ? '✓' : t.kind === 'error' ? '⚠' : 'ℹ'}
+            <span className="mt-0.5 shrink-0">
+              {t.kind === 'success' && <CheckCircleIcon className="h-4 w-4" />}
+              {t.kind === 'error' && <AlertIcon className="h-4 w-4" />}
+              {t.kind === 'info' && <InfoIcon className="h-4 w-4" />}
             </span>
             <span className="flex-1">{t.message}</span>
           </div>

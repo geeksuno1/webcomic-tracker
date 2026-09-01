@@ -9,6 +9,7 @@ export interface Comic {
   dateLastUpdated: string; // YYYY-MM-DD
   notes: string;
   normalizedTitle: string;
+  coverImageUrl: string;
 }
 
 export interface ParsedChapterInfo {
