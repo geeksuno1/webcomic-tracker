@@ -105,6 +105,21 @@ state at first) with no "Backend not configured" banner.
 5. Paste an earlier chapter number — you'll see the "replace it?" warning
    before anything is overwritten.
 
+### Browsing a large list
+
+Once you're tracking a lot of comics, the toolbar above your list gives you
+a few ways to manage that:
+
+- **List / Cards toggle** (top-right of the list) switches between the
+  compact table and a larger card grid (up to 3 cards per row) with bigger
+  cover thumbnails.
+- **A–Z index bar** lets you jump straight to comics whose title starts
+  with a given letter; letters with no matches are grayed out. Click **All**
+  to clear it.
+- **Pagination controls** at the bottom let you pick how many comics show
+  per page — 15, 30, or 50 — and step through pages. Your view and
+  per-page choice are remembered between visits.
+
 ## 5. Deploy the frontend (optional)
 
 `npm run build` produces a static `dist/` folder you can host anywhere

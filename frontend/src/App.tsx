@@ -8,11 +8,34 @@ import { ComicTable } from './components/ComicTable';
 import { EditComicModal } from './components/EditComicModal';
 import { HistoryModal } from './components/HistoryModal';
 import { ConfirmDialog } from './components/ConfirmDialog';
+import { ViewToggle, type ViewMode } from './components/ViewToggle';
+import { AlphaIndex, firstLetterOf } from './components/AlphaIndex';
+import { Pagination } from './components/Pagination';
 import { api, ApiError } from './services/api';
 import type { Comic, DateFilter, SortOption } from './types/Comic';
 import { daysSince } from './services/normalization';
 import { exportComicsAsCsv, exportComicsAsJson, parseImportedJson } from './services/export';
 import { AlertIcon, RefreshIcon } from './components/Icons';
+
+function usePersistedState<T>(key: string, initial: T): [T, (v: T) => void] {
+  const [value, setValue] = useState<T>(() => {
+    try {
+      const stored = localStorage.getItem(key);
+      if (stored !== null) return JSON.parse(stored) as T;
+    } catch {
+      /* ignore */
+    }
+    return initial;
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+      /* ignore */
+    }
+  }, [key, value]);
+  return [value, setValue];
+}
 
 function useDarkMode() {
   const [dark, setDark] = useState<boolean>(() => {
@@ -51,6 +74,11 @@ function AppInner() {
   const [websiteFilter, setWebsiteFilter] = useState('');
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
   const [sort, setSort] = useState<SortOption>('recently-updated');
+  const [letterFilter, setLetterFilter] = useState<string | null>(null);
+
+  const [viewMode, setViewMode] = usePersistedState<ViewMode>('webcomic-tracker:view', 'list');
+  const [pageSize, setPageSize] = usePersistedState<number>('webcomic-tracker:pageSize', 15);
+  const [page, setPage] = useState(1);
 
   const [savingAdd, setSavingAdd] = useState(false);
   const [pendingLowerChapter, setPendingLowerChapter] = useState<null | {
@@ -139,6 +167,32 @@ function AppInner() {
 
     return list;
   }, [comics, search, websiteFilter, dateFilter, sort]);
+
+  const availableLetters = useMemo(
+    () => new Set(visibleComics.map((c) => firstLetterOf(c.title))),
+    [visibleComics]
+  );
+
+  const letteredComics = useMemo(
+    () => (letterFilter ? visibleComics.filter((c) => firstLetterOf(c.title) === letterFilter) : visibleComics),
+    [visibleComics, letterFilter]
+  );
+
+  const pageCount = Math.max(1, Math.ceil(letteredComics.length / pageSize));
+  const pagedComics = useMemo(
+    () => letteredComics.slice((page - 1) * pageSize, page * pageSize),
+    [letteredComics, page, pageSize]
+  );
+
+  // Reset to page 1 whenever the underlying result set changes shape.
+  useEffect(() => {
+    setPage(1);
+  }, [search, websiteFilter, dateFilter, sort, letterFilter, pageSize]);
+
+  // Clamp the current page if the result set shrinks below it (e.g. after a delete).
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
 
   async function submitAddOrUpdate(
     info: { title: string; chapter: number; url: string; website: string; domain: string; coverImageUrl?: string },
@@ -276,12 +330,36 @@ function AppInner() {
           </button>
         </div>
       ) : (
-        <ComicTable
-          comics={visibleComics}
-          onEdit={setEditingComic}
-          onDelete={setDeletingComic}
-          onHistory={setHistoryComic}
-        />
+        <>
+          <AlphaIndex availableLetters={availableLetters} active={letterFilter} onSelect={setLetterFilter} />
+
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              {letteredComics.length} comic{letteredComics.length === 1 ? '' : 's'}
+              {letterFilter ? ` starting with "${letterFilter}"` : ''}
+            </p>
+            <ViewToggle value={viewMode} onChange={setViewMode} />
+          </div>
+
+          <ComicTable
+            comics={pagedComics}
+            view={viewMode}
+            onEdit={setEditingComic}
+            onDelete={setDeletingComic}
+            onHistory={setHistoryComic}
+          />
+
+          {letteredComics.length > 0 && (
+            <Pagination
+              page={page}
+              pageCount={pageCount}
+              pageSize={pageSize}
+              totalItems={letteredComics.length}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          )}
+        </>
       )}
 
       {editingComic && (

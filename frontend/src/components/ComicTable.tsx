@@ -5,12 +5,13 @@ import { ExternalLinkIcon, HistoryIcon, ImageOffIcon, PencilIcon, SearchIcon, Tr
 
 interface Props {
   comics: Comic[];
+  view?: 'list' | 'cards';
   onEdit: (comic: Comic) => void;
   onDelete: (comic: Comic) => void;
   onHistory: (comic: Comic) => void;
 }
 
-export function ComicTable({ comics, onEdit, onDelete, onHistory }: Props) {
+export function ComicTable({ comics, view = 'list', onEdit, onDelete, onHistory }: Props) {
   if (comics.length === 0) {
     return (
       <div className="card flex flex-col items-center gap-2 p-12 text-center">
@@ -19,6 +20,16 @@ export function ComicTable({ comics, onEdit, onDelete, onHistory }: Props) {
         </div>
         <p className="text-sm font-medium text-slate-600 dark:text-slate-300">No comics match your search or filters yet</p>
         <p className="text-xs text-slate-400 dark:text-slate-500">Try clearing a filter, or paste a chapter URL above to add one.</p>
+      </div>
+    );
+  }
+
+  if (view === 'cards') {
+    return (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {comics.map((c) => (
+          <BigCard key={c.id} comic={c} onEdit={onEdit} onDelete={onDelete} onHistory={onHistory} />
+        ))}
       </div>
     );
   }
@@ -96,11 +107,14 @@ export function ComicTable({ comics, onEdit, onDelete, onHistory }: Props) {
   );
 }
 
-function CoverThumb({ comic, className = '' }: { comic: Comic; className?: string }) {
+function CoverThumb({ comic, className = '', bare = false }: { comic: Comic; className?: string; bare?: boolean }) {
   const [failed, setFailed] = useState(false);
   const showImage = comic.coverImageUrl && !failed;
+  const frame = bare
+    ? 'overflow-hidden bg-slate-100 dark:bg-slate-800'
+    : 'overflow-hidden rounded-lg border border-slate-200 bg-slate-100 shadow-sm dark:border-slate-800 dark:bg-slate-800';
   return (
-    <div className={`overflow-hidden rounded-lg border border-slate-200 bg-slate-100 shadow-sm dark:border-slate-800 dark:bg-slate-800 ${className}`}>
+    <div className={`${frame} ${className}`}>
       {showImage ? (
         <img
           src={comic.coverImageUrl}
@@ -125,6 +139,33 @@ function StaleBadge({ dateStr }: { dateStr: string }) {
     return <span className="text-amber-600 dark:text-amber-400">{label}</span>;
   }
   return <span>{label}</span>;
+}
+
+function BigCard({
+  comic, onEdit, onDelete, onHistory,
+}: { comic: Comic; onEdit: (c: Comic) => void; onDelete: (c: Comic) => void; onHistory: (c: Comic) => void }) {
+  return (
+    <div className="card flex flex-col overflow-hidden p-0">
+      <CoverThumb comic={comic} bare className="h-48 w-full border-b border-slate-200 dark:border-slate-800" />
+      <div className="flex flex-1 flex-col gap-2 p-4">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="font-semibold leading-snug text-slate-800 dark:text-slate-100">{comic.title}</h3>
+          <span className="chip shrink-0 bg-indigo-50 font-semibold text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">
+            Ch. {comic.chapter}
+          </span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+          <span className="chip bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+            {comic.website || comic.domain}
+          </span>
+          <StaleBadge dateStr={comic.dateLastUpdated} />
+        </div>
+        <div className="mt-auto pt-2">
+          <RowActions comic={comic} onEdit={onEdit} onDelete={onDelete} onHistory={onHistory} />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function RowActions({
