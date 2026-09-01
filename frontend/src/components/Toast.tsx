@@ -15,6 +15,16 @@ interface ToastContextValue {
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
+// "Chapter Unlocked" gets more time on screen than a routine confirmation — it's
+// meant to be noticed, not just logged. The CSS animation duration below is kept
+// in lockstep with this so the toast never sits invisible waiting to be removed.
+const TOAST_DURATION_MS: Record<ToastKind, number> = {
+  unlock: 6500,
+  success: 4000,
+  error: 5000,
+  info: 4000,
+};
+
 export function useToast(): ToastContextValue {
   const ctx = useContext(ToastContext);
   if (!ctx) throw new Error('useToast must be used within ToastProvider');
@@ -30,7 +40,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts((t) => [...t, { id, kind, message }]);
     setTimeout(() => {
       setToasts((t) => t.filter((x) => x.id !== id));
-    }, 4000);
+    }, TOAST_DURATION_MS[kind]);
   }, []);
 
   return (
@@ -41,6 +51,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div
             key={t.id}
             role="status"
+            style={t.kind === 'unlock' ? { animationDuration: `${TOAST_DURATION_MS.unlock}ms` } : undefined}
             className={
               t.kind === 'unlock'
                 ? 'animate-unlock flex items-center gap-2.5 rounded-2xl border-2 border-ink bg-ink px-4 py-3 text-sm font-semibold uppercase tracking-wide text-paper shadow-lg dark:border-[#F4F0E6] dark:bg-[#1c1a18]'

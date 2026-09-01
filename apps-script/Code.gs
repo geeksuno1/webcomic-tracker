@@ -18,7 +18,7 @@ var HISTORY_SHEET_NAME = 'History';
 var COMICS_HEADERS = [
   'ID', 'Webcomic Name', 'Latest Completed Chapter', 'Latest Chapter URL',
   'Website', 'Domain', 'Date First Added', 'Date Last Updated', 'Notes',
-  'Normalized Title', 'Cover Image URL', 'Status'
+  'Normalized Title', 'Cover Image URL', 'Status', 'Favorite'
 ];
 
 // Valid values for the Status column. Stored in the sheet exactly as written here.
@@ -401,6 +401,7 @@ function comicRowToObject_(row) {
     normalizedTitle: row['Normalized Title'],
     coverImageUrl: row['Cover Image URL'] || '',
     status: row['Status'] || DEFAULT_COMIC_STATUS,
+    isFavorite: row['Favorite'] === true || row['Favorite'] === 'TRUE' || row['Favorite'] === 'true',
     _row: row._row
   };
 }
@@ -470,7 +471,8 @@ function addComic(data) {
       data.notes || '',
       normalizedTitle,
       data.coverImageUrl || '',
-      normalizeStatus_(data.status)
+      normalizeStatus_(data.status),
+      !!data.isFavorite
     ];
     sheet.appendRow(row);
 
@@ -514,12 +516,15 @@ function updateComic(id, data) {
     var normalizedTitle = normalizeTitle_(title);
     var coverImageUrl = data.coverImageUrl !== undefined ? data.coverImageUrl : target['Cover Image URL'];
     var status = data.status !== undefined ? normalizeStatus_(data.status) : (target['Status'] || DEFAULT_COMIC_STATUS);
+    var isFavorite = data.isFavorite !== undefined
+      ? !!data.isFavorite
+      : (target['Favorite'] === true || target['Favorite'] === 'TRUE' || target['Favorite'] === 'true');
 
     var rowNum = target._row;
-    // ID, Title, Chapter, URL, Website, Domain, FirstAdded, LastUpdated, Notes, NormalizedTitle, CoverImageUrl, Status
-    sheet.getRange(rowNum, 2, 1, 11).setValues([[
+    // ID, Title, Chapter, URL, Website, Domain, FirstAdded, LastUpdated, Notes, NormalizedTitle, CoverImageUrl, Status, Favorite
+    sheet.getRange(rowNum, 2, 1, 12).setValues([[
       title, chapter, url, website, domain,
-      target['Date First Added'], dateLastUpdated, notes, normalizedTitle, coverImageUrl || '', status
+      target['Date First Added'], dateLastUpdated, notes, normalizedTitle, coverImageUrl || '', status, isFavorite
     ]]);
 
     return getComic(id);
@@ -582,7 +587,7 @@ function addOrUpdateComic(data) {
       var row = [
         id, data.title, newChapter, data.url, website, domain,
         today, today, data.notes || '', normalizedTitle, data.coverImageUrl || '',
-        normalizeStatus_(data.status)
+        normalizeStatus_(data.status), !!data.isFavorite
       ];
       sheet.appendRow(row);
       addHistoryEntryUnlocked_({
@@ -621,10 +626,14 @@ function addOrUpdateComic(data) {
       ? normalizeStatus_(data.status)
       : (existing.status === 'Completed' && isSame ? existing.status : DEFAULT_COMIC_STATUS);
 
-    sheet.getRange(existing._row, 2, 1, 11).setValues([[
+    // A chapter-URL update (add/refresh) never touches the favorite flag — it's only
+    // ever changed explicitly, from the list/card star toggle or the edit form.
+    var isFavorite = data.isFavorite !== undefined ? !!data.isFavorite : existing.isFavorite;
+
+    sheet.getRange(existing._row, 2, 1, 12).setValues([[
       data.title, newChapter, data.url, website, domain,
       existing.dateFirstAdded, today, data.notes !== undefined ? data.notes : existing.notes,
-      normalizedTitle, coverImageUrl || '', status
+      normalizedTitle, coverImageUrl || '', status, isFavorite
     ]]);
 
     if (materialChange) {

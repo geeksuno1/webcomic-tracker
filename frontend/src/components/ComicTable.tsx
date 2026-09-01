@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import type { Comic } from '../types/Comic';
 import { formatDateReadable, daysSince } from '../services/normalization';
-import { CheckCircleIcon, ExternalLinkIcon, ImageOffIcon, LinkIcon, PauseIcon, PencilIcon, SearchIcon, XCircleIcon } from './Icons';
+import { CheckCircleIcon, ExternalLinkIcon, ImageOffIcon, LinkIcon, PauseIcon, PencilIcon, SearchIcon, StarIcon, XCircleIcon } from './Icons';
 
 interface Props {
   comics: Comic[];
   view?: 'list' | 'cards';
   onEdit: (comic: Comic) => void;
+  onToggleFavorite: (comic: Comic) => void;
 }
 
 /** Notes are used as a backup-link href; add a scheme if the user typed a bare domain. */
@@ -15,7 +16,7 @@ function resolveAltHref(notes: string): string {
   return /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed.replace(/^\/+/, '')}`;
 }
 
-export function ComicTable({ comics, view = 'list', onEdit }: Props) {
+export function ComicTable({ comics, view = 'list', onEdit, onToggleFavorite }: Props) {
   if (comics.length === 0) {
     return (
       <div className="card flex flex-col items-center gap-2 p-12 text-center">
@@ -32,7 +33,7 @@ export function ComicTable({ comics, view = 'list', onEdit }: Props) {
     return (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {comics.map((c) => (
-          <BigCard key={c.id} comic={c} onEdit={onEdit} />
+          <BigCard key={c.id} comic={c} onEdit={onEdit} onToggleFavorite={onToggleFavorite} />
         ))}
       </div>
     );
@@ -46,6 +47,7 @@ export function ComicTable({ comics, view = 'list', onEdit }: Props) {
           <thead>
             <tr className="border-b border-slate-200 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400">
               <th className="px-4 py-3" />
+              <th className="px-4 py-3" />
               <th className="px-4 py-3">Webcomic</th>
               <th className="px-4 py-3">Chapter</th>
               <th className="px-4 py-3">Website</th>
@@ -56,6 +58,9 @@ export function ComicTable({ comics, view = 'list', onEdit }: Props) {
           <tbody>
             {comics.map((c) => (
               <tr key={c.id} className="border-b border-slate-100 transition-colors last:border-0 hover:bg-black/[0.015] dark:border-slate-800/60 dark:hover:bg-white/[0.02]">
+                <td className="px-2 py-2">
+                  <FavoriteToggle comic={c} onToggleFavorite={onToggleFavorite} />
+                </td>
                 <td className="px-4 py-2">
                   <CoverThumb comic={c} className="h-14 w-10" />
                 </td>
@@ -92,9 +97,12 @@ export function ComicTable({ comics, view = 'list', onEdit }: Props) {
             <CoverThumb comic={c} className="h-24 w-16 shrink-0" />
             <div className="min-w-0 flex-1">
               <div className="flex items-start justify-between gap-2">
-                <div className="font-semibold text-slate-800 dark:text-slate-100">
-                  {c.title}
-                  <StatusBadge status={c.status} className="ml-2" />
+                <div className="flex items-start gap-1.5 font-semibold text-slate-800 dark:text-slate-100">
+                  <FavoriteToggle comic={c} onToggleFavorite={onToggleFavorite} />
+                  <span>
+                    {c.title}
+                    <StatusBadge status={c.status} className="ml-2" />
+                  </span>
                 </div>
                 <span className="chip shrink-0 bg-accent/10 font-semibold text-accent">
                   Ch. {c.chapter}
@@ -142,6 +150,30 @@ function CoverThumb({ comic, className = '', bare = false }: { comic: Comic; cla
   );
 }
 
+/** Star toggle — independent of the edit flow; a chapter URL update never touches this. */
+export function FavoriteToggle({
+  comic, onToggleFavorite, className = '',
+}: { comic: Comic; onToggleFavorite: (comic: Comic) => void; className?: string }) {
+  return (
+    <button
+      type="button"
+      title={comic.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+      aria-pressed={comic.isFavorite}
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggleFavorite(comic);
+      }}
+      className={`shrink-0 rounded-md p-1 transition-colors ${
+        comic.isFavorite
+          ? 'text-gold hover:text-gold/80'
+          : 'text-slate-300 hover:text-gold dark:text-slate-600 dark:hover:text-gold'
+      } ${className}`}
+    >
+      <StarIcon className="h-4 w-4" filled={comic.isFavorite} />
+    </button>
+  );
+}
+
 /** Reading is the default/implicit status and gets no badge — only the exceptions are called out. */
 export function StatusBadge({ status, className = '' }: { status: Comic['status']; className?: string }) {
   if (status === 'Reading') return null;
@@ -173,10 +205,17 @@ function StaleBadge({ dateStr }: { dateStr: string }) {
   return <span>{label}</span>;
 }
 
-function BigCard({ comic, onEdit }: { comic: Comic; onEdit: (c: Comic) => void }) {
+function BigCard({
+  comic, onEdit, onToggleFavorite,
+}: { comic: Comic; onEdit: (c: Comic) => void; onToggleFavorite: (comic: Comic) => void }) {
   return (
-    <div className="card flex flex-col overflow-hidden p-0">
+    <div className="card relative flex flex-col overflow-hidden p-0">
       <CoverThumb comic={comic} bare className="h-48 w-full border-b border-slate-200 dark:border-slate-800" />
+      <FavoriteToggle
+        comic={comic}
+        onToggleFavorite={onToggleFavorite}
+        className="absolute right-2 top-2 rounded-full bg-white/90 shadow-sm backdrop-blur dark:bg-slate-900/80"
+      />
       <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-semibold leading-snug text-slate-800 dark:text-slate-100">{comic.title}</h3>
@@ -210,7 +249,7 @@ function RowActions({ comic, onEdit }: { comic: Comic; onEdit: (c: Comic) => voi
         className="btn btn-secondary !px-2.5 !py-1.5 text-xs"
       >
         <ExternalLinkIcon className="h-3.5 w-3.5" />
-        <span className="hidden lg:inline">Open</span>
+        <span className="hidden 2xl:inline">Open</span>
       </a>
       {comic.notes && (
         <a
@@ -221,7 +260,6 @@ function RowActions({ comic, onEdit }: { comic: Comic; onEdit: (c: Comic) => voi
           className="btn btn-secondary !px-2.5 !py-1.5 text-xs"
         >
           <LinkIcon className="h-3.5 w-3.5" />
-          <span className="hidden lg:inline">Alt</span>
         </a>
       )}
       <button type="button" title="Edit" className="btn btn-secondary !px-2.5 !py-1.5 text-xs" onClick={() => onEdit(comic)}>

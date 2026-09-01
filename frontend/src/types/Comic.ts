@@ -15,6 +15,7 @@ export interface Comic {
   normalizedTitle: string;
   coverImageUrl: string;
   status: ComicStatus;
+  isFavorite: boolean;
 }
 
 export interface ParsedChapterInfo {

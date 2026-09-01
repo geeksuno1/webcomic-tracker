@@ -134,7 +134,7 @@ already had, so no spreadsheet changes are needed. Whenever a comic has
 something saved there, an **Alt** button appears next to Open that opens
 it as a link.
 
-### Reading status, the hero card, and "chapter unlocked"
+### Reading status, favorites, and "chapter unlocked"
 
 The tracker uses a small manga/comic-inspired visual language — a
 cream/ink/red-orange palette, condensed display type, and a few motion
@@ -145,13 +145,17 @@ actions rather than decoration.
   `On Hold`, or `Dropped` — set from the dropdown in the Edit window.
   `Reading` is the default and shows no badge; the other three get a small
   colored badge next to the title in every view.
-- **"Continue Your Journey" hero card.** The most recently updated comic
-  that's still `Reading` gets a spotlight card above the library, with a
-  bigger cover, its current chapter, and a direct "Continue reading" link —
-  so picking up where you left off doesn't require scanning the whole list.
+- **Favorites.** Click the star on any comic — in the list, on a card, or
+  in the Edit window — to pin it. Favoriting is independent of the
+  add/update flow: pasting a new chapter URL for a comic never changes its
+  favorite state either way. Starred comics show up in a **Favorites**
+  rail on the right side of the page as mid-sized quick-access cards, with
+  a direct Open link and edit shortcut — no need to search or paginate to
+  reach the titles you check most often. The rail collapses below its own
+  content on narrower screens.
 - **"Chapter Unlocked" flash.** Saving a new chapter (not just refreshing
   the same one) shows a bold, book-themed toast instead of the usual
-  quieter confirmation.
+  quieter confirmation, held on screen long enough to actually read.
 - **"It's been N days…" narration.** Once a comic hasn't been updated in
   30+ days, its "Last Updated" column switches from a plain date to a
   narrated line like *"It's been 92 days…"* — a nudge that it's gone quiet,
@@ -297,6 +301,7 @@ atomically even if two requests arrive close together.
 | J | Normalized Title |
 | K | Cover Image URL |
 | L | Status |
+| M | Favorite |
 
 `Status` is one of `Reading`, `Completed`, `On Hold`, or `Dropped` (defaults
 to `Reading`). It's added automatically to existing sheets the next time the
@@ -305,6 +310,11 @@ chapter for a comic resets its status back to `Reading` unless you set it
 explicitly in the Edit window; re-saving the same chapter number preserves
 whatever status it already had (so a `Completed` comic doesn't flip back to
 `Reading` just because a refresh ran).
+
+`Favorite` is `TRUE`/`FALSE` (defaults to `FALSE`), also added automatically.
+Unlike `Status`, it is never touched by the add/update-from-URL flow —
+pasting a new chapter link only ever changes title/chapter/URL/status; the
+favorite flag only changes when you explicitly click the star.
 
 **`History`** (append-only log of every chapter update):
 

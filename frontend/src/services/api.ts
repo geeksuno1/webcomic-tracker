@@ -110,6 +110,11 @@ export const api = {
     return post<Comic>('updateComic', { id, ...data });
   },
 
+  /** Toggles favorite on its own — never touches title/chapter/status/etc. */
+  async setFavorite(id: string, isFavorite: boolean): Promise<Comic> {
+    return post<Comic>('updateComic', { id, isFavorite });
+  },
+
   async deleteComic(id: string, deleteHistory = false): Promise<{ id: string; deleted: boolean }> {
     return post<{ id: string; deleted: boolean }>('deleteComic', { id, deleteHistory });
   },

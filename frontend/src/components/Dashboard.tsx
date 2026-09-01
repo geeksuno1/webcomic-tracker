@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { BookIcon, ChevronDownIcon, DownloadIcon, MoonIcon, RefreshIcon, SparkleIcon, SunIcon, UploadIcon } from './Icons';
+import { ChevronDownIcon, DownloadIcon, MoonIcon, RefreshIcon, SunIcon, UploadIcon } from './Icons';
 
 interface Props {
   darkMode: boolean;
@@ -10,30 +10,20 @@ interface Props {
   onExportJson: () => void;
   onExportCsv: () => void;
   onImportJson: (file: File) => void;
+  sidebar?: ReactNode;
   children: ReactNode;
 }
 
 export function DashboardShell({
   darkMode, onToggleDarkMode, lastSynced, onRefresh, refreshing,
-  onExportJson, onExportCsv, onImportJson, children,
+  onExportJson, onExportCsv, onImportJson, sidebar, children,
 }: Props) {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:py-10">
+    <div className="mx-auto max-w-[1600px] px-4 py-6 sm:py-10">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-3">
-          <div className="relative mt-0.5 shrink-0">
-            <div
-              className="flex h-12 w-12 items-center justify-center rounded-xl bg-ink text-paper shadow-sm shadow-ink/30 dark:bg-[#F4F0E6] dark:text-[#121110]"
-              aria-hidden="true"
-            >
-              <BookIcon className="h-6 w-6" />
-            </div>
-            <span
-              className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-ink shadow-sm ring-2 ring-paper dark:ring-[#121110]"
-              aria-hidden="true"
-            >
-              <SparkleIcon className="h-3 w-3" />
-            </span>
+          <div className="mt-0.5 h-14 w-14 shrink-0 overflow-hidden rounded-xl shadow-sm shadow-ink/30">
+            <img src="/logo.png" alt="Manga Quest Log" className="h-full w-full object-cover" />
           </div>
           <div>
             <h1 className="brand-title text-3xl sm:text-4xl">
@@ -101,7 +91,14 @@ export function DashboardShell({
         </div>
       </header>
 
-      <div className="mt-6 space-y-6">{children}</div>
+      <div
+        className={`mt-6 grid grid-cols-1 gap-6 lg:items-start ${
+          sidebar ? 'lg:grid-cols-[minmax(0,1fr)_320px]' : ''
+        }`}
+      >
+        <div className="min-w-0 space-y-6">{children}</div>
+        {sidebar && <div className="lg:sticky lg:top-6">{sidebar}</div>}
+      </div>
     </div>
   );
 }

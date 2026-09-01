@@ -5,7 +5,7 @@ import { StatsCards } from './components/StatsCards';
 import { SearchAndFilters } from './components/SearchAndFilters';
 import { AddComicForm } from './components/AddComicForm';
 import { ComicTable } from './components/ComicTable';
-import { HeroCard } from './components/HeroCard';
+import { FavoritesSidebar } from './components/FavoritesSidebar';
 import { EditComicModal } from './components/EditComicModal';
 import { HistoryModal } from './components/HistoryModal';
 import { ConfirmDialog } from './components/ConfirmDialog';
@@ -169,13 +169,10 @@ function AppInner() {
     return list;
   }, [comics, search, websiteFilter, dateFilter, sort]);
 
-  const heroComic = useMemo(() => {
-    const reading = comics.filter((c) => c.status === 'Reading' || !c.status);
-    if (reading.length === 0) return null;
-    return reading.reduce((best, c) =>
-      daysSince(c.dateLastUpdated) < daysSince(best.dateLastUpdated) ? c : best
-    );
-  }, [comics]);
+  const favorites = useMemo(
+    () => comics.filter((c) => c.isFavorite).sort((a, b) => a.title.localeCompare(b.title)),
+    [comics]
+  );
 
   const availableLetters = useMemo(
     () => new Set(visibleComics.map((c) => firstLetterOf(c.title))),
@@ -260,6 +257,20 @@ function AppInner() {
     }
   }
 
+  async function handleToggleFavorite(comic: Comic) {
+    const nextValue = !comic.isFavorite;
+    // Optimistic update — favoriting is a lightweight, standalone action that
+    // never touches title/chapter/status, so it shouldn't wait on a full reload.
+    setComics((prev) => prev.map((c) => (c.id === comic.id ? { ...c, isFavorite: nextValue } : c)));
+    try {
+      await api.setFavorite(comic.id, nextValue);
+    } catch (err) {
+      setComics((prev) => prev.map((c) => (c.id === comic.id ? { ...c, isFavorite: comic.isFavorite } : c)));
+      const message = err instanceof ApiError ? err.message : 'Unable to update favorite. Please try again.';
+      toast.show(message, 'error');
+    }
+  }
+
   async function handleImportJson(file: File) {
     try {
       const text = await file.text();
@@ -300,6 +311,9 @@ function AppInner() {
       onExportJson={() => exportComicsAsJson(comics)}
       onExportCsv={() => exportComicsAsCsv(comics)}
       onImportJson={handleImportJson}
+      sidebar={
+        <FavoritesSidebar favorites={favorites} onToggleFavorite={handleToggleFavorite} onEdit={setEditingComic} />
+      }
     >
       {!api.isConfigured() && (
         <div className="card flex items-start gap-3 border-gold/40 bg-gold/10 p-4 text-sm text-[#8a6100] dark:border-gold/30 dark:bg-gold/10 dark:text-gold">
@@ -344,8 +358,6 @@ function AppInner() {
         </div>
       ) : (
         <>
-          {heroComic && <HeroCard comic={heroComic} onEdit={setEditingComic} />}
-
           <AlphaIndex availableLetters={availableLetters} active={letterFilter} onSelect={setLetterFilter} />
 
           <div className="flex items-center justify-between gap-3">
@@ -371,6 +383,7 @@ function AppInner() {
             comics={pagedComics}
             view={viewMode}
             onEdit={setEditingComic}
+            onToggleFavorite={handleToggleFavorite}
           />
         </>
       )}
