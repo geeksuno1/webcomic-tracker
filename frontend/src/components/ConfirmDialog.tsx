@@ -30,8 +30,8 @@ export function ConfirmDialog({
           <div
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
               danger
-                ? 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400'
-                : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400'
+                ? 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400'
+                : 'bg-accent/10 text-accent'
             }`}
           >
             <AlertIcon className="h-5 w-5" />

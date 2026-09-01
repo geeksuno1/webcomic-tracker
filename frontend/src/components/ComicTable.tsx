@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Comic } from '../types/Comic';
 import { formatDateReadable, daysSince } from '../services/normalization';
-import { ExternalLinkIcon, ImageOffIcon, LinkIcon, PencilIcon, SearchIcon } from './Icons';
+import { CheckCircleIcon, ExternalLinkIcon, ImageOffIcon, LinkIcon, PauseIcon, PencilIcon, SearchIcon, XCircleIcon } from './Icons';
 
 interface Props {
   comics: Comic[];
@@ -55,13 +55,16 @@ export function ComicTable({ comics, view = 'list', onEdit }: Props) {
           </thead>
           <tbody>
             {comics.map((c) => (
-              <tr key={c.id} className="border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50/80 dark:border-slate-800/60 dark:hover:bg-slate-800/40">
+              <tr key={c.id} className="border-b border-slate-100 transition-colors last:border-0 hover:bg-black/[0.015] dark:border-slate-800/60 dark:hover:bg-white/[0.02]">
                 <td className="px-4 py-2">
                   <CoverThumb comic={c} className="h-14 w-10" />
                 </td>
-                <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{c.title}</td>
+                <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">
+                  {c.title}
+                  <StatusBadge status={c.status} className="ml-2" />
+                </td>
                 <td className="px-4 py-3">
-                  <span className="chip bg-rose-50 font-semibold text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">
+                  <span className="chip bg-accent/10 font-semibold text-accent">
                     Ch. {c.chapter}
                   </span>
                 </td>
@@ -89,8 +92,11 @@ export function ComicTable({ comics, view = 'list', onEdit }: Props) {
             <CoverThumb comic={c} className="h-24 w-16 shrink-0" />
             <div className="min-w-0 flex-1">
               <div className="flex items-start justify-between gap-2">
-                <div className="font-semibold text-slate-800 dark:text-slate-100">{c.title}</div>
-                <span className="chip shrink-0 bg-rose-50 font-semibold text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">
+                <div className="font-semibold text-slate-800 dark:text-slate-100">
+                  {c.title}
+                  <StatusBadge status={c.status} className="ml-2" />
+                </div>
+                <span className="chip shrink-0 bg-accent/10 font-semibold text-accent">
                   Ch. {c.chapter}
                 </span>
               </div>
@@ -136,11 +142,33 @@ function CoverThumb({ comic, className = '', bare = false }: { comic: Comic; cla
   );
 }
 
+/** Reading is the default/implicit status and gets no badge — only the exceptions are called out. */
+export function StatusBadge({ status, className = '' }: { status: Comic['status']; className?: string }) {
+  if (status === 'Reading') return null;
+  const config = {
+    Completed: { icon: CheckCircleIcon, label: 'Complete', tint: 'bg-leaf/10 text-leaf' },
+    'On Hold': { icon: PauseIcon, label: 'On Hold', tint: 'bg-sky/10 text-sky' },
+    Dropped: { icon: XCircleIcon, label: 'Dropped', tint: 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400' },
+  }[status];
+  if (!config) return null;
+  const Icon = config.icon;
+  return (
+    <span className={`chip ${config.tint} gap-1 align-middle font-semibold ${className}`}>
+      <Icon className="h-3 w-3" /> {config.label}
+    </span>
+  );
+}
+
+/** Plain date normally; manga-style narration once a comic has gone quiet for a while. */
 function StaleBadge({ dateStr }: { dateStr: string }) {
   const days = daysSince(dateStr);
   const label = formatDateReadable(dateStr);
-  if (days >= 30) {
-    return <span className="text-amber-600 dark:text-amber-400">{label}</span>;
+  if (days >= 30 && Number.isFinite(days)) {
+    return (
+      <span className="italic text-slate-400 dark:text-slate-500" title={label}>
+        It's been {days} days…
+      </span>
+    );
   }
   return <span>{label}</span>;
 }
@@ -152,7 +180,7 @@ function BigCard({ comic, onEdit }: { comic: Comic; onEdit: (c: Comic) => void }
       <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-semibold leading-snug text-slate-800 dark:text-slate-100">{comic.title}</h3>
-          <span className="chip shrink-0 bg-rose-50 font-semibold text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">
+          <span className="chip shrink-0 bg-accent/10 font-semibold text-accent">
             Ch. {comic.chapter}
           </span>
         </div>
@@ -160,6 +188,7 @@ function BigCard({ comic, onEdit }: { comic: Comic; onEdit: (c: Comic) => void }
           <span className="chip bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
             {comic.website || comic.domain}
           </span>
+          <StatusBadge status={comic.status} />
           <StaleBadge dateStr={comic.dateLastUpdated} />
         </div>
         <div className="mt-auto pt-2">

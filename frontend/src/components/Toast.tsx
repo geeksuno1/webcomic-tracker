@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
-import { AlertIcon, CheckCircleIcon, InfoIcon } from './Icons';
+import { AlertIcon, CheckCircleIcon, InfoIcon, SparkleIcon } from './Icons';
 
-type ToastKind = 'success' | 'error' | 'info';
+type ToastKind = 'success' | 'error' | 'info' | 'unlock';
 
 interface ToastItem {
   id: number;
@@ -42,20 +42,25 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             key={t.id}
             role="status"
             className={
-              'card animate-in flex items-start gap-2.5 px-4 py-3 text-sm shadow-lg ' +
-              (t.kind === 'success'
-                ? 'border-emerald-200 text-emerald-800 dark:border-emerald-900 dark:text-emerald-300'
-                : t.kind === 'error'
-                ? 'border-rose-200 text-rose-800 dark:border-rose-900 dark:text-rose-300'
-                : '')
+              t.kind === 'unlock'
+                ? 'animate-unlock flex items-center gap-2.5 rounded-2xl border-2 border-ink bg-ink px-4 py-3 text-sm font-semibold uppercase tracking-wide text-paper shadow-lg dark:border-[#F4F0E6] dark:bg-[#1c1a18]'
+                : 'card animate-in flex items-start gap-2.5 px-4 py-3 text-sm shadow-lg ' +
+                  (t.kind === 'success'
+                    ? 'border-leaf/40 text-leaf'
+                    : t.kind === 'error'
+                    ? 'border-red-200 text-red-800 dark:border-red-900 dark:text-red-300'
+                    : '')
             }
           >
             <span className="mt-0.5 shrink-0">
               {t.kind === 'success' && <CheckCircleIcon className="h-4 w-4" />}
               {t.kind === 'error' && <AlertIcon className="h-4 w-4" />}
               {t.kind === 'info' && <InfoIcon className="h-4 w-4" />}
+              {t.kind === 'unlock' && <SparkleIcon className="h-4 w-4 text-gold" />}
             </span>
-            <span className="flex-1">{t.message}</span>
+            <span className="flex-1 normal-case tracking-normal">
+              {t.kind === 'unlock' ? <span className="font-display text-base tracking-wide">{t.message}</span> : t.message}
+            </span>
           </div>
         ))}
       </div>

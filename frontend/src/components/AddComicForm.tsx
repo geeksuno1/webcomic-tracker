@@ -107,7 +107,7 @@ export function AddComicForm({ comics, onSubmit, busy }: Props) {
   return (
     <form onSubmit={handleSubmit} className="card p-4 sm:p-5">
       <label htmlFor="chapter-url" className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
-        <SparkleIcon className="h-4 w-4 text-rose-500" />
+        <SparkleIcon className="h-4 w-4 text-accent" />
         Paste latest chapter URL
       </label>
       <div className="mt-2 flex flex-col gap-2 sm:flex-row">
@@ -127,7 +127,7 @@ export function AddComicForm({ comics, onSubmit, busy }: Props) {
       </div>
 
       {url && !isLikelyUrl(url) && (
-        <p className="mt-2 text-xs text-rose-600 dark:text-rose-400">
+        <p className="mt-2 text-xs text-red-600 dark:text-red-400">
           That doesn't look like a valid URL yet — it should start with http:// or https://.
         </p>
       )}

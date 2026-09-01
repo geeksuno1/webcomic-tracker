@@ -1,3 +1,7 @@
+export type ComicStatus = 'Reading' | 'Completed' | 'On Hold' | 'Dropped';
+
+export const COMIC_STATUSES: ComicStatus[] = ['Reading', 'Completed', 'On Hold', 'Dropped'];
+
 export interface Comic {
   id: string;
   title: string;
@@ -10,6 +14,7 @@ export interface Comic {
   notes: string;
   normalizedTitle: string;
   coverImageUrl: string;
+  status: ComicStatus;
 }
 
 export interface ParsedChapterInfo {

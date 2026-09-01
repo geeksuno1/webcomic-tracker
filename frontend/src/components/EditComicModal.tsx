@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Comic } from '../types/Comic';
+import { COMIC_STATUSES } from '../types/Comic';
 import { HistoryIcon, PencilIcon, TrashIcon } from './Icons';
 import { CoverImagePicker } from './CoverImagePicker';
 
@@ -20,6 +21,7 @@ export function EditComicModal({ comic, onSave, onClose, onHistory, onDelete, bu
   const [dateLastUpdated, setDateLastUpdated] = useState(comic.dateLastUpdated);
   const [notes, setNotes] = useState(comic.notes || '');
   const [coverImageUrl, setCoverImageUrl] = useState(comic.coverImageUrl || '');
+  const [status, setStatus] = useState<Comic['status']>(comic.status || 'Reading');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -27,7 +29,7 @@ export function EditComicModal({ comic, onSave, onClose, onHistory, onDelete, bu
     if (!title.trim() || isNaN(chapterNum) || !url.trim()) return;
     await onSave({
       title: title.trim(), chapter: chapterNum, url: url.trim(), website: website.trim(),
-      dateLastUpdated, notes: notes.trim(), coverImageUrl: coverImageUrl.trim(),
+      dateLastUpdated, notes: notes.trim(), coverImageUrl: coverImageUrl.trim(), status,
     });
   }
 
@@ -40,7 +42,7 @@ export function EditComicModal({ comic, onSave, onClose, onHistory, onDelete, bu
       >
         <div className="flex items-center justify-between gap-2">
           <h3 className="flex items-center gap-1.5 text-base font-semibold text-slate-900 dark:text-white">
-            <PencilIcon className="h-4 w-4 text-rose-500" /> Edit comic
+            <PencilIcon className="h-4 w-4 text-accent" /> Edit comic
           </h3>
           <div className="flex items-center gap-1.5">
             <button
@@ -73,6 +75,18 @@ export function EditComicModal({ comic, onSave, onClose, onHistory, onDelete, bu
           <LabeledInput label="Chapter URL" type="url" value={url} onChange={setUrl} required />
           <LabeledInput label="Website" value={website} onChange={setWebsite} />
           <LabeledInput label="Date last updated" type="date" value={dateLastUpdated} onChange={setDateLastUpdated} />
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Reading status</label>
+            <select
+              className="input"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as Comic['status'])}
+            >
+              {COMIC_STATUSES.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
               Alternate source (optional)

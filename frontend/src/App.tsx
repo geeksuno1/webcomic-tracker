@@ -5,6 +5,7 @@ import { StatsCards } from './components/StatsCards';
 import { SearchAndFilters } from './components/SearchAndFilters';
 import { AddComicForm } from './components/AddComicForm';
 import { ComicTable } from './components/ComicTable';
+import { HeroCard } from './components/HeroCard';
 import { EditComicModal } from './components/EditComicModal';
 import { HistoryModal } from './components/HistoryModal';
 import { ConfirmDialog } from './components/ConfirmDialog';
@@ -168,6 +169,14 @@ function AppInner() {
     return list;
   }, [comics, search, websiteFilter, dateFilter, sort]);
 
+  const heroComic = useMemo(() => {
+    const reading = comics.filter((c) => c.status === 'Reading' || !c.status);
+    if (reading.length === 0) return null;
+    return reading.reduce((best, c) =>
+      daysSince(c.dateLastUpdated) < daysSince(best.dateLastUpdated) ? c : best
+    );
+  }, [comics]);
+
   const availableLetters = useMemo(
     () => new Set(visibleComics.map((c) => firstLetterOf(c.title))),
     [visibleComics]
@@ -208,7 +217,11 @@ function AppInner() {
       setPendingLowerChapter(null);
       await loadComics();
       const verb = result.status === 'created' ? 'added' : result.status === 'refreshed' ? 'refreshed' : 'updated';
-      toast.show(`"${result.comic.title}" ${verb} — Chapter ${result.comic.chapter}.`, 'success');
+      if (result.status === 'created' || result.status === 'updated') {
+        toast.show(`Chapter Unlocked! "${result.comic.title}" — Ch. ${result.comic.chapter}`, 'unlock');
+      } else {
+        toast.show(`"${result.comic.title}" ${verb} — Chapter ${result.comic.chapter}.`, 'success');
+      }
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'Unable to save your update. Please try again.';
       toast.show(message, 'error');
@@ -289,10 +302,10 @@ function AppInner() {
       onImportJson={handleImportJson}
     >
       {!api.isConfigured() && (
-        <div className="card flex items-start gap-3 border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-500/10 dark:text-amber-300">
+        <div className="card flex items-start gap-3 border-gold/40 bg-gold/10 p-4 text-sm text-[#8a6100] dark:border-gold/30 dark:bg-gold/10 dark:text-gold">
           <AlertIcon className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
-            <strong className="font-semibold">Backend not configured.</strong> Set <code className="rounded bg-amber-100 px-1 py-0.5 dark:bg-amber-900/40">VITE_APPS_SCRIPT_URL</code> in your <code className="rounded bg-amber-100 px-1 py-0.5 dark:bg-amber-900/40">.env</code> file
+            <strong className="font-semibold">Backend not configured.</strong> Set <code className="rounded bg-gold/20 px-1 py-0.5">VITE_APPS_SCRIPT_URL</code> in your <code className="rounded bg-gold/20 px-1 py-0.5">.env</code> file
             to your deployed Google Apps Script Web App URL, then rebuild. See the README for setup steps.
           </p>
         </div>
@@ -316,12 +329,12 @@ function AppInner() {
 
       {loading ? (
         <div className="card flex flex-col items-center gap-3 p-12 text-center text-sm text-slate-500 dark:text-slate-400">
-          <span className="h-6 w-6 animate-spin rounded-full border-2 border-rose-500 border-t-transparent" />
+          <span className="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent" />
           Loading comics from Google Sheets…
         </div>
       ) : loadError ? (
-        <div className="card flex flex-col items-center gap-3 border-rose-200 p-8 text-center text-sm text-rose-700 dark:border-rose-900 dark:text-rose-300">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-50 dark:bg-rose-500/10">
+        <div className="card flex flex-col items-center gap-3 border-red-200 p-8 text-center text-sm text-red-700 dark:border-red-900 dark:text-red-300">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50 dark:bg-red-500/10">
             <AlertIcon className="h-5 w-5" />
           </div>
           {loadError}
@@ -331,6 +344,8 @@ function AppInner() {
         </div>
       ) : (
         <>
+          {heroComic && <HeroCard comic={heroComic} onEdit={setEditingComic} />}
+
           <AlphaIndex availableLetters={availableLetters} active={letterFilter} onSelect={setLetterFilter} />
 
           <div className="flex items-center justify-between gap-3">

@@ -30,7 +30,7 @@ export function HistoryModal({ comic, onClose }: Props) {
       <div className="card animate-in w-full max-w-lg p-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h3 className="flex items-center gap-1.5 text-base font-semibold text-slate-900 dark:text-white">
-            <HistoryIcon className="h-4 w-4 text-rose-500" /> {comic.title}
+            <HistoryIcon className="h-4 w-4 text-accent" /> {comic.title}
           </h3>
           <button type="button" className="btn btn-secondary !p-2" onClick={onClose} aria-label="Close">
             <XIcon className="h-4 w-4" />
@@ -38,7 +38,7 @@ export function HistoryModal({ comic, onClose }: Props) {
         </div>
 
         <div className="mt-4 max-h-96 space-y-2 overflow-y-auto">
-          {error && <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>}
+          {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
           {!error && entries === null && (
             <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
               <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -54,7 +54,7 @@ export function HistoryModal({ comic, onClose }: Props) {
               href={h.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm transition-colors hover:border-rose-200 hover:bg-rose-50/50 dark:border-slate-800 dark:hover:border-rose-900 dark:hover:bg-rose-500/10"
+              className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm transition-colors hover:border-accent/40 hover:bg-accent/5 dark:border-slate-800 dark:hover:border-accent/50 dark:hover:bg-accent/10"
             >
               <div>
                 <span className="font-medium text-slate-800 dark:text-slate-100">Chapter {h.chapter}</span>

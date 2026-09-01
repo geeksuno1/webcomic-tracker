@@ -72,7 +72,7 @@ export function CoverImagePicker({ value, onChange, autoLoading = false, filenam
         aria-label="Paste an image here (Ctrl+V), or use the buttons below to upload one"
         onPaste={handlePaste}
         title="Click here and press Ctrl+V to paste an image from your clipboard"
-        className={`relative shrink-0 overflow-hidden rounded-lg border border-dashed border-slate-300 bg-slate-100 outline-none transition-colors focus:border-rose-400 focus:ring-2 focus:ring-rose-500/30 dark:border-slate-700 dark:bg-slate-800 ${dims}`}
+        className={`relative shrink-0 overflow-hidden rounded-lg border border-dashed border-slate-300 bg-slate-100 outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/30 dark:border-slate-700 dark:bg-slate-800 ${dims}`}
       >
         {showImage ? (
           <img
@@ -88,7 +88,7 @@ export function CoverImagePicker({ value, onChange, autoLoading = false, filenam
         )}
         {busy && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/70 dark:bg-slate-900/70">
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-rose-500 border-t-transparent" />
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-accent border-t-transparent" />
           </div>
         )}
       </div>
@@ -117,7 +117,7 @@ export function CoverImagePicker({ value, onChange, autoLoading = false, filenam
         {value && (
           <button
             type="button"
-            className="w-fit text-left text-xs text-slate-400 underline-offset-2 hover:text-rose-500 hover:underline dark:text-slate-500 dark:hover:text-rose-400"
+            className="w-fit text-left text-xs text-slate-400 underline-offset-2 hover:text-red-600 hover:underline dark:text-slate-500 dark:hover:text-red-400"
             onClick={() => { onChange(''); setFailed(false); }}
           >
             Remove cover

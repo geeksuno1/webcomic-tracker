@@ -134,6 +134,32 @@ already had, so no spreadsheet changes are needed. Whenever a comic has
 something saved there, an **Alt** button appears next to Open that opens
 it as a link.
 
+### Reading status, the hero card, and "chapter unlocked"
+
+The tracker uses a small manga/comic-inspired visual language — a
+cream/ink/red-orange palette, condensed display type, and a few motion
+touches — kept mostly neutral so color stays reserved for status and
+actions rather than decoration.
+
+- **Reading status.** Every comic has a status — `Reading`, `Completed`,
+  `On Hold`, or `Dropped` — set from the dropdown in the Edit window.
+  `Reading` is the default and shows no badge; the other three get a small
+  colored badge next to the title in every view.
+- **"Continue Your Journey" hero card.** The most recently updated comic
+  that's still `Reading` gets a spotlight card above the library, with a
+  bigger cover, its current chapter, and a direct "Continue reading" link —
+  so picking up where you left off doesn't require scanning the whole list.
+- **"Chapter Unlocked" flash.** Saving a new chapter (not just refreshing
+  the same one) shows a bold, book-themed toast instead of the usual
+  quieter confirmation.
+- **"It's been N days…" narration.** Once a comic hasn't been updated in
+  30+ days, its "Last Updated" column switches from a plain date to a
+  narrated line like *"It's been 92 days…"* — a nudge that it's gone quiet,
+  without needing a separate stale filter.
+
+All of this respects `prefers-reduced-motion` — the flash animation is
+skipped for anyone with that preference set.
+
 ## 5. Deploy the frontend (optional)
 
 `npm run build` produces a static `dist/` folder you can host anywhere
@@ -270,6 +296,15 @@ atomically even if two requests arrive close together.
 | I | Notes |
 | J | Normalized Title |
 | K | Cover Image URL |
+| L | Status |
+
+`Status` is one of `Reading`, `Completed`, `On Hold`, or `Dropped` (defaults
+to `Reading`). It's added automatically to existing sheets the next time the
+backend runs — no manual spreadsheet edit needed. Saving a genuinely new
+chapter for a comic resets its status back to `Reading` unless you set it
+explicitly in the Edit window; re-saving the same chapter number preserves
+whatever status it already had (so a `Completed` comic doesn't flip back to
+`Reading` just because a refresh ran).
 
 **`History`** (append-only log of every chapter update):
 

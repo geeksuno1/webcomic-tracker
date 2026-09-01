@@ -47,7 +47,7 @@ function IndexButton({
       onClick={onClick}
       className={`flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-xs font-semibold transition-colors ${
         isActive
-          ? 'bg-rose-600 text-white shadow-sm'
+          ? 'bg-accent text-white shadow-sm'
           : disabled
           ? 'cursor-not-allowed text-slate-300 dark:text-slate-700'
           : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100'

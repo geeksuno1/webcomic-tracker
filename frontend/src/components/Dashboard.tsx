@@ -23,14 +23,13 @@ export function DashboardShell({
         <div className="flex items-start gap-3">
           <div className="relative mt-0.5 shrink-0">
             <div
-              className="flex h-12 w-12 items-center justify-center rounded-xl text-white shadow-sm shadow-rose-600/30"
-              style={{ backgroundImage: 'linear-gradient(135deg, #e11d48, #f59e0b)' }}
+              className="flex h-12 w-12 items-center justify-center rounded-xl bg-ink text-paper shadow-sm shadow-ink/30 dark:bg-[#F4F0E6] dark:text-[#121110]"
               aria-hidden="true"
             >
               <BookIcon className="h-6 w-6" />
             </div>
             <span
-              className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-white shadow-sm ring-2 ring-slate-50 dark:ring-slate-950"
+              className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-ink shadow-sm ring-2 ring-paper dark:ring-[#121110]"
               aria-hidden="true"
             >
               <SparkleIcon className="h-3 w-3" />

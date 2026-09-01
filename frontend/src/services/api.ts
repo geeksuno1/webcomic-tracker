@@ -100,6 +100,7 @@ export const api = {
     domain: string;
     notes?: string;
     coverImageUrl?: string;
+    status?: Comic['status'];
     forceOverwrite?: boolean;
   }): Promise<AddOrUpdateResult> {
     return post<AddOrUpdateResult>('addOrUpdateComic', data);

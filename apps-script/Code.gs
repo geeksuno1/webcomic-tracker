@@ -18,8 +18,12 @@ var HISTORY_SHEET_NAME = 'History';
 var COMICS_HEADERS = [
   'ID', 'Webcomic Name', 'Latest Completed Chapter', 'Latest Chapter URL',
   'Website', 'Domain', 'Date First Added', 'Date Last Updated', 'Notes',
-  'Normalized Title', 'Cover Image URL'
+  'Normalized Title', 'Cover Image URL', 'Status'
 ];
+
+// Valid values for the Status column. Stored in the sheet exactly as written here.
+var COMIC_STATUSES = ['Reading', 'Completed', 'On Hold', 'Dropped'];
+var DEFAULT_COMIC_STATUS = 'Reading';
 
 var HISTORY_HEADERS = [
   'History ID', 'Comic ID', 'Webcomic Name', 'Chapter', 'Chapter URL',
@@ -396,8 +400,15 @@ function comicRowToObject_(row) {
     notes: row['Notes'] || '',
     normalizedTitle: row['Normalized Title'],
     coverImageUrl: row['Cover Image URL'] || '',
+    status: row['Status'] || DEFAULT_COMIC_STATUS,
     _row: row._row
   };
+}
+
+/** Coerces any incoming status value to one of COMIC_STATUSES, falling back to the default. */
+function normalizeStatus_(status) {
+  if (COMIC_STATUSES.indexOf(status) !== -1) return status;
+  return DEFAULT_COMIC_STATUS;
 }
 
 function formatDateCell_(val) {
@@ -458,7 +469,8 @@ function addComic(data) {
       today,
       data.notes || '',
       normalizedTitle,
-      data.coverImageUrl || ''
+      data.coverImageUrl || '',
+      normalizeStatus_(data.status)
     ];
     sheet.appendRow(row);
 
@@ -501,12 +513,13 @@ function updateComic(id, data) {
     var dateLastUpdated = data.dateLastUpdated || todayStr_();
     var normalizedTitle = normalizeTitle_(title);
     var coverImageUrl = data.coverImageUrl !== undefined ? data.coverImageUrl : target['Cover Image URL'];
+    var status = data.status !== undefined ? normalizeStatus_(data.status) : (target['Status'] || DEFAULT_COMIC_STATUS);
 
     var rowNum = target._row;
-    // ID, Title, Chapter, URL, Website, Domain, FirstAdded, LastUpdated, Notes, NormalizedTitle, CoverImageUrl
-    sheet.getRange(rowNum, 2, 1, 10).setValues([[
+    // ID, Title, Chapter, URL, Website, Domain, FirstAdded, LastUpdated, Notes, NormalizedTitle, CoverImageUrl, Status
+    sheet.getRange(rowNum, 2, 1, 11).setValues([[
       title, chapter, url, website, domain,
-      target['Date First Added'], dateLastUpdated, notes, normalizedTitle, coverImageUrl || ''
+      target['Date First Added'], dateLastUpdated, notes, normalizedTitle, coverImageUrl || '', status
     ]]);
 
     return getComic(id);
@@ -568,7 +581,8 @@ function addOrUpdateComic(data) {
       var id = generateId_('comic');
       var row = [
         id, data.title, newChapter, data.url, website, domain,
-        today, today, data.notes || '', normalizedTitle, data.coverImageUrl || ''
+        today, today, data.notes || '', normalizedTitle, data.coverImageUrl || '',
+        normalizeStatus_(data.status)
       ];
       sheet.appendRow(row);
       addHistoryEntryUnlocked_({
@@ -600,11 +614,17 @@ function addOrUpdateComic(data) {
     var coverImageUrl = data.coverImageUrl !== undefined && data.coverImageUrl !== ''
       ? data.coverImageUrl
       : existing.coverImageUrl;
+    // A fresh chapter update implicitly resumes an on-hold/dropped/completed comic
+    // (a real new chapter showed up), unless the caller explicitly set a status
+    // (e.g. from the edit form) or this is just a same-chapter refresh.
+    var status = data.status !== undefined
+      ? normalizeStatus_(data.status)
+      : (existing.status === 'Completed' && isSame ? existing.status : DEFAULT_COMIC_STATUS);
 
-    sheet.getRange(existing._row, 2, 1, 10).setValues([[
+    sheet.getRange(existing._row, 2, 1, 11).setValues([[
       data.title, newChapter, data.url, website, domain,
       existing.dateFirstAdded, today, data.notes !== undefined ? data.notes : existing.notes,
-      normalizedTitle, coverImageUrl || ''
+      normalizedTitle, coverImageUrl || '', status
     ]]);
 
     if (materialChange) {

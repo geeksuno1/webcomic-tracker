@@ -21,19 +21,19 @@ export function StatsCards({ comics }: { comics: Comic[] }) {
   const cards = [
     {
       label: 'Total Comics', value: stats.total, icon: BookIcon,
-      tint: 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400',
+      tint: 'bg-accent/10 text-accent',
     },
     {
       label: 'Updated This Week', value: stats.updatedThisWeek, icon: RefreshIcon,
-      tint: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400',
+      tint: 'bg-leaf/10 text-leaf',
     },
     {
       label: 'Sources', value: stats.sources, icon: HistoryIcon,
-      tint: 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400',
+      tint: 'bg-sky/10 text-sky',
     },
     {
       label: 'Recently Updated', value: stats.mostRecent ? stats.mostRecent.title : '—', small: true, icon: SparkleIcon,
-      tint: 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400',
+      tint: 'bg-gold/15 text-[#a3720a] dark:text-gold',
     },
   ];
 
