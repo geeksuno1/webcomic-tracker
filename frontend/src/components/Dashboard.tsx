@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ChevronDownIcon, DownloadIcon, MoonIcon, RefreshIcon, SunIcon, UploadIcon } from './Icons';
+import { ChevronDownIcon, DownloadIcon, MoonIcon, RefreshIcon, SparkleIcon, SunIcon, UploadIcon } from './Icons';
 import { LOGO_DATA_URI } from '../assets/logo';
 
 interface Props {
@@ -22,16 +22,23 @@ export function DashboardShell({
   return (
     <div className="mx-auto max-w-[1600px] px-4 py-6 sm:py-10">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-start gap-3">
-          <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-ink shadow-sm shadow-ink/30 sm:h-24 sm:w-24">
-            <img src={LOGO_DATA_URI} alt="Manga Quest Log" className="h-full w-full object-contain p-1" />
-          </div>
+        <div className="flex items-center gap-4">
+          <img
+            src={LOGO_DATA_URI}
+            alt="Manga Quest Log"
+            className="h-20 w-auto shrink-0 drop-shadow-sm sm:h-24"
+            style={{ aspectRatio: '488 / 421' }}
+          />
           <div>
             <h1 className="brand-title text-3xl sm:text-4xl">
               Webcomic Tracker
             </h1>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Never forget where you stopped reading.
+            <div className="mt-2 flex items-center gap-2">
+              <span className="h-[3px] w-32 rounded-full bg-gradient-to-r from-accent via-gold to-sky sm:w-48" />
+              <SparkleIcon className="h-3 w-3 shrink-0 text-sky" />
+            </div>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              Every great journey has a next chapter.
             </p>
           </div>
         </div>
