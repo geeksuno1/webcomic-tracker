@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Comic } from '../types/Comic';
-import { ImageOffIcon, PencilIcon } from './Icons';
+import { PencilIcon } from './Icons';
+import { CoverImagePicker } from './CoverImagePicker';
 
 interface Props {
   comic: Comic;
@@ -17,7 +18,6 @@ export function EditComicModal({ comic, onSave, onClose, busy }: Props) {
   const [dateLastUpdated, setDateLastUpdated] = useState(comic.dateLastUpdated);
   const [notes, setNotes] = useState(comic.notes || '');
   const [coverImageUrl, setCoverImageUrl] = useState(comic.coverImageUrl || '');
-  const [coverFailed, setCoverFailed] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -40,28 +40,9 @@ export function EditComicModal({ comic, onSave, onClose, busy }: Props) {
           <PencilIcon className="h-4 w-4 text-indigo-500" /> Edit comic
         </h3>
         <div className="mt-4 space-y-3">
-          <div className="flex gap-3">
-            <div className="h-24 w-16 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
-              {coverImageUrl && !coverFailed ? (
-                <img
-                  src={coverImageUrl}
-                  alt=""
-                  className="h-full w-full object-cover"
-                  onError={() => setCoverFailed(true)}
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-slate-300 dark:text-slate-600">
-                  <ImageOffIcon className="h-6 w-6" />
-                </div>
-              )}
-            </div>
-            <div className="flex-1">
-              <LabeledInput
-                label="Cover image URL"
-                value={coverImageUrl}
-                onChange={(v) => { setCoverImageUrl(v); setCoverFailed(false); }}
-              />
-            </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Cover image</label>
+            <CoverImagePicker value={coverImageUrl} onChange={setCoverImageUrl} filenameHint={title || 'cover'} size="sm" />
           </div>
           <LabeledInput label="Webcomic title" value={title} onChange={setTitle} required />
           <LabeledInput label="Chapter" type="number" step="0.5" value={chapter} onChange={setChapter} required />

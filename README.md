@@ -185,6 +185,30 @@ never need to run a build command yourself.
 4. The backend returns the resulting comic record, and the frontend reloads
    the dashboard from the sheet.
 
+### Cover images
+
+When you paste a chapter URL for a **brand-new** comic, the frontend asks
+the backend to fetch that page and pull a cover image out of its `og:image`
+(or similar) meta tag — this happens automatically, in the background,
+while you're checking the detected title/chapter. If that lookup fails (the
+site blocks scraping, has no usable image, etc.), you can upload your own
+image file or click the cover box and paste one from your clipboard (works
+right after you copy an image, e.g. with a screenshot tool). Either way, the
+image is uploaded to a folder named **"Webcomic Tracker Covers"** in the
+Google Drive belonging to whoever owns the Apps Script deployment, and a
+direct-link URL to it is stored in the sheet.
+
+The cover prompt only appears for new comics — when you paste a URL for a
+comic you're already tracking (used to log a new chapter), the form
+recognizes it by its normalized title and skips straight to confirming the
+chapter update, keeping the existing cover. You can still change a comic's
+cover at any time from the **Edit** button on its row.
+
+Because this feature uses Google Drive, the first time you redeploy
+`Code.gs` after adding it, Google will likely ask you to re-authorize the
+script (it now needs Drive access in addition to Sheets access) — just
+review and accept the permissions screen when it appears.
+
 ### Duplicate matching
 
 Titles are normalized (lowercased, punctuation stripped, hyphens/underscores
@@ -216,6 +240,7 @@ atomically even if two requests arrive close together.
 | H | Date Last Updated |
 | I | Notes |
 | J | Normalized Title |
+| K | Cover Image URL |
 
 **`History`** (append-only log of every chapter update):
 

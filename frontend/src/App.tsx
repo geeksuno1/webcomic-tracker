@@ -244,7 +244,7 @@ function AppInner() {
         </div>
       )}
 
-      <AddComicForm onSubmit={(info) => submitAddOrUpdate(info)} busy={savingAdd} />
+      <AddComicForm comics={comics} onSubmit={(info) => submitAddOrUpdate(info)} busy={savingAdd} />
 
       <StatsCards comics={comics} />
 

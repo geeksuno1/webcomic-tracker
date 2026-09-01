@@ -83,6 +83,9 @@ function doPost(e) {
       case 'deleteComic':
         result = deleteComic(data.id, !!data.deleteHistory);
         break;
+      case 'uploadCoverImage':
+        result = uploadCoverImage(data);
+        break;
       default:
         return jsonResponse(apiError('Unknown or missing action: ' + action));
     }
@@ -306,6 +309,58 @@ function fetchCoverImageFromUrl_(url) {
   } catch (err) {
     return '';
   }
+}
+
+var COVERS_FOLDER_NAME = 'Webcomic Tracker Covers';
+var MAX_UPLOAD_BYTES = 6 * 1024 * 1024; // 6MB, generous for a cover thumbnail
+
+/**
+ * Accepts a pasted or uploaded image (base64-encoded) from the frontend,
+ * stores it in a dedicated Google Drive folder, makes it viewable via link,
+ * and returns a direct-embeddable image URL.
+ * data: { imageBase64 (no data: prefix), mimeType, filename? }
+ */
+function uploadCoverImage(data) {
+  if (!data || !data.imageBase64) {
+    throw new Error('No image data received.');
+  }
+  var mimeType = data.mimeType || 'image/jpeg';
+  if (!/^image\//.test(mimeType)) {
+    throw new Error('Only image files can be used as a cover.');
+  }
+
+  var base64 = String(data.imageBase64).replace(/^data:[^,]+,/, '');
+  var approxBytes = Math.floor(base64.length * 0.75);
+  if (approxBytes > MAX_UPLOAD_BYTES) {
+    throw new Error('That image is too large (max 6MB). Try a smaller image.');
+  }
+
+  var bytes;
+  try {
+    bytes = Utilities.base64Decode(base64);
+  } catch (err) {
+    throw new Error('Could not read that image file.');
+  }
+
+  var extension = mimeType.split('/')[1] || 'jpg';
+  var filename = (data.filename || 'cover') + '-' + Utilities.getUuid().substring(0, 8) + '.' + extension;
+  var blob = Utilities.newBlob(bytes, mimeType, filename);
+
+  var folder = getOrCreateCoversFolder_();
+  var file = folder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+  var fileId = file.getId();
+  return {
+    url: 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w600',
+    fileId: fileId
+  };
+}
+
+function getOrCreateCoversFolder_() {
+  var folders = DriveApp.getFoldersByName(COVERS_FOLDER_NAME);
+  if (folders.hasNext()) return folders.next();
+  return DriveApp.createFolder(COVERS_FOLDER_NAME);
 }
 
 /** Resolves a possibly-relative image URL against the page URL it came from. */

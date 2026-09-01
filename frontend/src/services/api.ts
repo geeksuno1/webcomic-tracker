@@ -87,6 +87,11 @@ export const api = {
     }
   },
 
+  /** Uploads a pasted/selected image to Drive and returns its direct-embed URL. */
+  async uploadCoverImage(imageBase64: string, mimeType: string, filename?: string): Promise<{ url: string; fileId: string }> {
+    return post<{ url: string; fileId: string }>('uploadCoverImage', { imageBase64, mimeType, filename });
+  },
+
   async addOrUpdateComic(data: {
     title: string;
     chapter: number;

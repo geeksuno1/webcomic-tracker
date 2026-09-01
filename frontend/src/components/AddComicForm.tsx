@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { parseChapterUrl, isLikelyUrl } from '../services/parser';
 import { api } from '../services/api';
-import type { ParsedChapterInfo } from '../types/Comic';
-import { ImageOffIcon, SparkleIcon } from './Icons';
+import { normalizeTitle } from '../services/normalization';
+import type { Comic, ParsedChapterInfo } from '../types/Comic';
+import { SparkleIcon } from './Icons';
+import { CoverImagePicker } from './CoverImagePicker';
 
 interface Props {
+  comics: Comic[];
   onSubmit: (info: {
     title: string;
     chapter: number;
@@ -16,24 +19,31 @@ interface Props {
   busy: boolean;
 }
 
-export function AddComicForm({ onSubmit, busy }: Props) {
+export function AddComicForm({ comics, onSubmit, busy }: Props) {
   const [url, setUrl] = useState('');
   const [parsed, setParsed] = useState<ParsedChapterInfo | null>(null);
   const [title, setTitle] = useState('');
   const [chapter, setChapter] = useState('');
   const [website, setWebsite] = useState('');
   const [coverImageUrl, setCoverImageUrl] = useState('');
-  const [coverLoading, setCoverLoading] = useState(false);
-  const [coverFailed, setCoverFailed] = useState(false);
+  const [coverAutoLoading, setCoverAutoLoading] = useState(false);
   const coverRequestId = useRef(0);
+
+  const existingByNormalizedTitle = useMemo(() => {
+    const map = new Map<string, Comic>();
+    for (const c of comics) map.set(c.normalizedTitle || normalizeTitle(c.title), c);
+    return map;
+  }, [comics]);
+
+  const matchedExisting = title.trim() ? existingByNormalizedTitle.get(normalizeTitle(title)) : undefined;
+  const isNewEntry = !matchedExisting;
 
   function handleUrlChange(value: string) {
     setUrl(value);
     setCoverImageUrl('');
-    setCoverFailed(false);
     if (!isLikelyUrl(value)) {
       setParsed(null);
-      setCoverLoading(false);
+      setCoverAutoLoading(false);
       return;
     }
     const info = parseChapterUrl(value);
@@ -43,24 +53,20 @@ export function AddComicForm({ onSubmit, busy }: Props) {
     setWebsite(info.website);
   }
 
-  // Debounced server-side cover image lookup whenever the URL settles.
+  // Debounced server-side cover image lookup whenever the URL settles. If it
+  // can't find one, the user can still upload or paste an image manually.
   useEffect(() => {
-    if (!isLikelyUrl(url)) return;
+    if (!isLikelyUrl(url) || !isNewEntry) return;
     const requestId = ++coverRequestId.current;
-    setCoverLoading(true);
-    setCoverFailed(false);
+    setCoverAutoLoading(true);
     const timer = setTimeout(async () => {
       const found = await api.fetchCoverImage(url.trim());
       if (coverRequestId.current !== requestId) return; // a newer URL was typed meanwhile
-      setCoverLoading(false);
-      if (found) {
-        setCoverImageUrl(found);
-      } else {
-        setCoverFailed(true);
-      }
+      setCoverAutoLoading(false);
+      if (found) setCoverImageUrl(found);
     }, 600);
     return () => clearTimeout(timer);
-  }, [url]);
+  }, [url, isNewEntry]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -82,7 +88,6 @@ export function AddComicForm({ onSubmit, busy }: Props) {
     setChapter('');
     setWebsite('');
     setCoverImageUrl('');
-    setCoverFailed(false);
   }
 
   const canSubmit = isLikelyUrl(url) && title.trim().length > 0 && chapter !== '' && !isNaN(parseFloat(chapter));
@@ -116,41 +121,26 @@ export function AddComicForm({ onSubmit, busy }: Props) {
       )}
 
       {parsed && (
-        <div className="animate-in mt-4 flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800/50 sm:flex-row">
-          <div className="flex sm:w-28 sm:shrink-0 sm:flex-col sm:items-start">
-            <div className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400 sm:hidden">Cover</div>
-            <div className="relative h-28 w-20 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
-              {coverImageUrl ? (
-                <img
-                  src={coverImageUrl}
-                  alt=""
-                  className="h-full w-full object-cover"
-                  onError={() => { setCoverImageUrl(''); setCoverFailed(true); }}
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-slate-300 dark:text-slate-600">
-                  {coverLoading ? (
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  ) : (
-                    <ImageOffIcon className="h-6 w-6" />
-                  )}
-                </div>
-              )}
+        <div className="animate-in mt-4 flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800/50">
+          {isNewEntry ? (
+            <div>
+              <div className="mb-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                Cover — auto-detected when possible, or upload / paste your own
+              </div>
+              <CoverImagePicker
+                value={coverImageUrl}
+                onChange={setCoverImageUrl}
+                autoLoading={coverAutoLoading}
+                filenameHint={title || 'cover'}
+              />
             </div>
-            <input
-              className="input mt-2 !py-1 text-xs"
-              placeholder="Cover image URL"
-              value={coverImageUrl}
-              onChange={(e) => { setCoverImageUrl(e.target.value); setCoverFailed(false); }}
-            />
-            {coverFailed && !coverImageUrl && (
-              <span className="mt-1 block text-xs text-slate-400 dark:text-slate-500">
-                No cover found — paste one manually if you like.
-              </span>
-            )}
-          </div>
+          ) : (
+            <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+              This will update <span className="font-medium text-slate-700 dark:text-slate-200">{matchedExisting?.title}</span> to the new chapter. Its existing cover is kept — edit it later from the comic's row if you want to change it.
+            </div>
+          )}
 
-          <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="sm:col-span-3 text-xs font-medium text-slate-500 dark:text-slate-400">
               Detected — correct anything that's wrong before saving
             </div>
