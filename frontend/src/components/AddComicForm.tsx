@@ -15,6 +15,7 @@ interface Props {
     website: string;
     domain: string;
     coverImageUrl: string;
+    notes: string;
   }) => Promise<void>;
   busy: boolean;
 }
@@ -27,6 +28,7 @@ export function AddComicForm({ comics, onSubmit, busy }: Props) {
   const [website, setWebsite] = useState('');
   const [coverImageUrl, setCoverImageUrl] = useState('');
   const [coverAutoLoading, setCoverAutoLoading] = useState(false);
+  const [altSource, setAltSource] = useState('');
   const coverRequestId = useRef(0);
 
   const existingByNormalizedTitle = useMemo(() => {
@@ -38,12 +40,20 @@ export function AddComicForm({ comics, onSubmit, busy }: Props) {
   const matchedExisting = title.trim() ? existingByNormalizedTitle.get(normalizeTitle(title)) : undefined;
   const isNewEntry = !matchedExisting;
 
+  // Pre-fill the alternate-source field from the matched comic's existing Notes so an
+  // update doesn't accidentally wipe it out; clears back out for a genuinely new entry.
+  useEffect(() => {
+    setAltSource(matchedExisting?.notes || '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchedExisting?.id]);
+
   function handleUrlChange(value: string) {
     setUrl(value);
     setCoverImageUrl('');
     if (!isLikelyUrl(value)) {
       setParsed(null);
       setCoverAutoLoading(false);
+      setAltSource('');
       return;
     }
     const info = parseChapterUrl(value);
@@ -81,6 +91,7 @@ export function AddComicForm({ comics, onSubmit, busy }: Props) {
       website: website.trim(),
       domain,
       coverImageUrl: coverImageUrl.trim(),
+      notes: altSource.trim(),
     });
     setUrl('');
     setParsed(null);
@@ -88,6 +99,7 @@ export function AddComicForm({ comics, onSubmit, busy }: Props) {
     setChapter('');
     setWebsite('');
     setCoverImageUrl('');
+    setAltSource('');
   }
 
   const canSubmit = isLikelyUrl(url) && title.trim().length > 0 && chapter !== '' && !isNaN(parseFloat(chapter));
@@ -95,7 +107,7 @@ export function AddComicForm({ comics, onSubmit, busy }: Props) {
   return (
     <form onSubmit={handleSubmit} className="card p-4 sm:p-5">
       <label htmlFor="chapter-url" className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
-        <SparkleIcon className="h-4 w-4 text-indigo-500" />
+        <SparkleIcon className="h-4 w-4 text-rose-500" />
         Paste latest chapter URL
       </label>
       <div className="mt-2 flex flex-col gap-2 sm:flex-row">
@@ -169,6 +181,18 @@ export function AddComicForm({ comics, onSubmit, busy }: Props) {
             <Field label="Website">
               <input className="input" value={website} onChange={(e) => setWebsite(e.target.value)} />
             </Field>
+            <div className="sm:col-span-3">
+              <Field label="Alternate source (optional)">
+                <input
+                  className="input"
+                  type="url"
+                  inputMode="url"
+                  placeholder="Backup link — a mirror site, raw scans, a Discord post…"
+                  value={altSource}
+                  onChange={(e) => setAltSource(e.target.value)}
+                />
+              </Field>
+            </div>
           </div>
         </div>
       )}

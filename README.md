@@ -116,9 +116,23 @@ a few ways to manage that:
 - **A–Z index bar** lets you jump straight to comics whose title starts
   with a given letter; letters with no matches are grayed out. Click **All**
   to clear it.
-- **Pagination controls** at the bottom let you pick how many comics show
-  per page — 15, 30, or 50 — and step through pages. Your view and
+- **Pagination controls**, above the list, let you pick how many comics show
+  per page — 10, 15, 30, or 50 — and step through pages. Your view and
   per-page choice are remembered between visits.
+
+### Row actions and Alternate source
+
+To keep the list and card views uncluttered, each row/card only shows
+**Open** (the chapter link) and a pencil **Edit** button. **History** and
+**Delete** moved into the edit window — click the pencil, then use the
+buttons next to "Edit comic" at the top of that dialog.
+
+When adding or updating a comic, there's an optional **Alternate source**
+field — a backup link (a mirror site, raw scans, a Discord post, etc.).
+Behind the scenes this is stored in the same `Notes` column the sheet
+already had, so no spreadsheet changes are needed. Whenever a comic has
+something saved there, an **Alt** button appears next to Open that opens
+it as a link.
 
 ## 5. Deploy the frontend (optional)
 

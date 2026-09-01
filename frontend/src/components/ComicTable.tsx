@@ -1,17 +1,21 @@
 import { useState } from 'react';
 import type { Comic } from '../types/Comic';
 import { formatDateReadable, daysSince } from '../services/normalization';
-import { ExternalLinkIcon, HistoryIcon, ImageOffIcon, PencilIcon, SearchIcon, TrashIcon } from './Icons';
+import { ExternalLinkIcon, ImageOffIcon, LinkIcon, PencilIcon, SearchIcon } from './Icons';
 
 interface Props {
   comics: Comic[];
   view?: 'list' | 'cards';
   onEdit: (comic: Comic) => void;
-  onDelete: (comic: Comic) => void;
-  onHistory: (comic: Comic) => void;
 }
 
-export function ComicTable({ comics, view = 'list', onEdit, onDelete, onHistory }: Props) {
+/** Notes are used as a backup-link href; add a scheme if the user typed a bare domain. */
+function resolveAltHref(notes: string): string {
+  const trimmed = notes.trim();
+  return /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed.replace(/^\/+/, '')}`;
+}
+
+export function ComicTable({ comics, view = 'list', onEdit }: Props) {
   if (comics.length === 0) {
     return (
       <div className="card flex flex-col items-center gap-2 p-12 text-center">
@@ -28,7 +32,7 @@ export function ComicTable({ comics, view = 'list', onEdit, onDelete, onHistory 
     return (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {comics.map((c) => (
-          <BigCard key={c.id} comic={c} onEdit={onEdit} onDelete={onDelete} onHistory={onHistory} />
+          <BigCard key={c.id} comic={c} onEdit={onEdit} />
         ))}
       </div>
     );
@@ -57,7 +61,7 @@ export function ComicTable({ comics, view = 'list', onEdit, onDelete, onHistory 
                 </td>
                 <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{c.title}</td>
                 <td className="px-4 py-3">
-                  <span className="chip bg-indigo-50 font-semibold text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">
+                  <span className="chip bg-rose-50 font-semibold text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">
                     Ch. {c.chapter}
                   </span>
                 </td>
@@ -70,7 +74,7 @@ export function ComicTable({ comics, view = 'list', onEdit, onDelete, onHistory 
                   <StaleBadge dateStr={c.dateLastUpdated} />
                 </td>
                 <td className="px-4 py-3">
-                  <RowActions comic={c} onEdit={onEdit} onDelete={onDelete} onHistory={onHistory} />
+                  <RowActions comic={c} onEdit={onEdit} />
                 </td>
               </tr>
             ))}
@@ -86,7 +90,7 @@ export function ComicTable({ comics, view = 'list', onEdit, onDelete, onHistory 
             <div className="min-w-0 flex-1">
               <div className="flex items-start justify-between gap-2">
                 <div className="font-semibold text-slate-800 dark:text-slate-100">{c.title}</div>
-                <span className="chip shrink-0 bg-indigo-50 font-semibold text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">
+                <span className="chip shrink-0 bg-rose-50 font-semibold text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">
                   Ch. {c.chapter}
                 </span>
               </div>
@@ -97,7 +101,7 @@ export function ComicTable({ comics, view = 'list', onEdit, onDelete, onHistory 
                 <StaleBadge dateStr={c.dateLastUpdated} />
               </div>
               <div className="mt-3">
-                <RowActions comic={c} onEdit={onEdit} onDelete={onDelete} onHistory={onHistory} />
+                <RowActions comic={c} onEdit={onEdit} />
               </div>
             </div>
           </div>
@@ -141,16 +145,14 @@ function StaleBadge({ dateStr }: { dateStr: string }) {
   return <span>{label}</span>;
 }
 
-function BigCard({
-  comic, onEdit, onDelete, onHistory,
-}: { comic: Comic; onEdit: (c: Comic) => void; onDelete: (c: Comic) => void; onHistory: (c: Comic) => void }) {
+function BigCard({ comic, onEdit }: { comic: Comic; onEdit: (c: Comic) => void }) {
   return (
     <div className="card flex flex-col overflow-hidden p-0">
       <CoverThumb comic={comic} bare className="h-48 w-full border-b border-slate-200 dark:border-slate-800" />
       <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-semibold leading-snug text-slate-800 dark:text-slate-100">{comic.title}</h3>
-          <span className="chip shrink-0 bg-indigo-50 font-semibold text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">
+          <span className="chip shrink-0 bg-rose-50 font-semibold text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">
             Ch. {comic.chapter}
           </span>
         </div>
@@ -161,16 +163,14 @@ function BigCard({
           <StaleBadge dateStr={comic.dateLastUpdated} />
         </div>
         <div className="mt-auto pt-2">
-          <RowActions comic={comic} onEdit={onEdit} onDelete={onDelete} onHistory={onHistory} />
+          <RowActions comic={comic} onEdit={onEdit} />
         </div>
       </div>
     </div>
   );
 }
 
-function RowActions({
-  comic, onEdit, onDelete, onHistory,
-}: { comic: Comic; onEdit: (c: Comic) => void; onDelete: (c: Comic) => void; onHistory: (c: Comic) => void }) {
+function RowActions({ comic, onEdit }: { comic: Comic; onEdit: (c: Comic) => void }) {
   return (
     <div className="flex flex-wrap items-center justify-end gap-1.5">
       <a
@@ -183,17 +183,20 @@ function RowActions({
         <ExternalLinkIcon className="h-3.5 w-3.5" />
         <span className="hidden lg:inline">Open</span>
       </a>
-      <button type="button" title="View history" className="btn btn-secondary !px-2.5 !py-1.5 text-xs" onClick={() => onHistory(comic)}>
-        <HistoryIcon className="h-3.5 w-3.5" />
-        <span className="hidden lg:inline">History</span>
-      </button>
+      {comic.notes && (
+        <a
+          href={resolveAltHref(comic.notes)}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={`Alternate source: ${comic.notes}`}
+          className="btn btn-secondary !px-2.5 !py-1.5 text-xs"
+        >
+          <LinkIcon className="h-3.5 w-3.5" />
+          <span className="hidden lg:inline">Alt</span>
+        </a>
+      )}
       <button type="button" title="Edit" className="btn btn-secondary !px-2.5 !py-1.5 text-xs" onClick={() => onEdit(comic)}>
         <PencilIcon className="h-3.5 w-3.5" />
-        <span className="hidden lg:inline">Edit</span>
-      </button>
-      <button type="button" title="Delete" className="btn btn-danger !px-2.5 !py-1.5 text-xs" onClick={() => onDelete(comic)}>
-        <TrashIcon className="h-3.5 w-3.5" />
-        <span className="hidden lg:inline">Delete</span>
       </button>
     </div>
   );

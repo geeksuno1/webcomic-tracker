@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { BookIcon, ChevronDownIcon, DownloadIcon, MoonIcon, RefreshIcon, SunIcon, UploadIcon } from './Icons';
+import { BookIcon, ChevronDownIcon, DownloadIcon, MoonIcon, RefreshIcon, SparkleIcon, SunIcon, UploadIcon } from './Icons';
 
 interface Props {
   darkMode: boolean;
@@ -21,15 +21,23 @@ export function DashboardShell({
     <div className="mx-auto max-w-6xl px-4 py-6 sm:py-10">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-3">
-          <div
-            className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-sm shadow-indigo-600/30"
-            style={{ backgroundImage: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
-            aria-hidden="true"
-          >
-            <BookIcon className="h-5 w-5" />
+          <div className="relative mt-0.5 shrink-0">
+            <div
+              className="flex h-12 w-12 items-center justify-center rounded-xl text-white shadow-sm shadow-rose-600/30"
+              style={{ backgroundImage: 'linear-gradient(135deg, #e11d48, #f59e0b)' }}
+              aria-hidden="true"
+            >
+              <BookIcon className="h-6 w-6" />
+            </div>
+            <span
+              className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-white shadow-sm ring-2 ring-slate-50 dark:ring-slate-950"
+              aria-hidden="true"
+            >
+              <SparkleIcon className="h-3 w-3" />
+            </span>
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+            <h1 className="brand-title text-3xl sm:text-4xl">
               Webcomic Tracker
             </h1>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">

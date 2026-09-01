@@ -82,7 +82,7 @@ function AppInner() {
 
   const [savingAdd, setSavingAdd] = useState(false);
   const [pendingLowerChapter, setPendingLowerChapter] = useState<null | {
-    title: string; chapter: number; url: string; website: string; domain: string; coverImageUrl?: string; warning: string;
+    title: string; chapter: number; url: string; website: string; domain: string; coverImageUrl?: string; notes?: string; warning: string;
   }>(null);
 
   const [editingComic, setEditingComic] = useState<Comic | null>(null);
@@ -195,7 +195,7 @@ function AppInner() {
   }, [page, pageCount]);
 
   async function submitAddOrUpdate(
-    info: { title: string; chapter: number; url: string; website: string; domain: string; coverImageUrl?: string },
+    info: { title: string; chapter: number; url: string; website: string; domain: string; coverImageUrl?: string; notes?: string },
     forceOverwrite = false
   ) {
     setSavingAdd(true);
@@ -316,7 +316,7 @@ function AppInner() {
 
       {loading ? (
         <div className="card flex flex-col items-center gap-3 p-12 text-center text-sm text-slate-500 dark:text-slate-400">
-          <span className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+          <span className="h-6 w-6 animate-spin rounded-full border-2 border-rose-500 border-t-transparent" />
           Loading comics from Google Sheets…
         </div>
       ) : loadError ? (
@@ -341,14 +341,6 @@ function AppInner() {
             <ViewToggle value={viewMode} onChange={setViewMode} />
           </div>
 
-          <ComicTable
-            comics={pagedComics}
-            view={viewMode}
-            onEdit={setEditingComic}
-            onDelete={setDeletingComic}
-            onHistory={setHistoryComic}
-          />
-
           {letteredComics.length > 0 && (
             <Pagination
               page={page}
@@ -359,6 +351,12 @@ function AppInner() {
               onPageSizeChange={setPageSize}
             />
           )}
+
+          <ComicTable
+            comics={pagedComics}
+            view={viewMode}
+            onEdit={setEditingComic}
+          />
         </>
       )}
 
@@ -367,6 +365,14 @@ function AppInner() {
           comic={editingComic}
           onSave={handleEditSave}
           onClose={() => setEditingComic(null)}
+          onHistory={(c) => {
+            setEditingComic(null);
+            setHistoryComic(c);
+          }}
+          onDelete={(c) => {
+            setEditingComic(null);
+            setDeletingComic(c);
+          }}
           busy={savingEdit}
         />
       )}

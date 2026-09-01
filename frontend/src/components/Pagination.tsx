@@ -1,6 +1,6 @@
 import { ChevronLeftIcon, ChevronRightIcon } from './Icons';
 
-const PAGE_SIZE_OPTIONS = [15, 30, 50];
+const PAGE_SIZE_OPTIONS = [10, 15, 30, 50];
 
 interface Props {
   page: number;

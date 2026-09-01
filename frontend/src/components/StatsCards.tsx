@@ -21,7 +21,7 @@ export function StatsCards({ comics }: { comics: Comic[] }) {
   const cards = [
     {
       label: 'Total Comics', value: stats.total, icon: BookIcon,
-      tint: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400',
+      tint: 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400',
     },
     {
       label: 'Updated This Week', value: stats.updatedThisWeek, icon: RefreshIcon,
@@ -33,7 +33,7 @@ export function StatsCards({ comics }: { comics: Comic[] }) {
     },
     {
       label: 'Recently Updated', value: stats.mostRecent ? stats.mostRecent.title : '—', small: true, icon: SparkleIcon,
-      tint: 'bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400',
+      tint: 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400',
     },
   ];
 

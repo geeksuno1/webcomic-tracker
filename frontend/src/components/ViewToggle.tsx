@@ -26,7 +26,7 @@ function ToggleButton({
       onClick={onClick}
       className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
         active
-          ? 'bg-indigo-600 text-white shadow-sm'
+          ? 'bg-rose-600 text-white shadow-sm'
           : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100'
       }`}
     >

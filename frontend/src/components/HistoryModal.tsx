@@ -30,7 +30,7 @@ export function HistoryModal({ comic, onClose }: Props) {
       <div className="card animate-in w-full max-w-lg p-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h3 className="flex items-center gap-1.5 text-base font-semibold text-slate-900 dark:text-white">
-            <HistoryIcon className="h-4 w-4 text-indigo-500" /> {comic.title}
+            <HistoryIcon className="h-4 w-4 text-rose-500" /> {comic.title}
           </h3>
           <button type="button" className="btn btn-secondary !p-2" onClick={onClose} aria-label="Close">
             <XIcon className="h-4 w-4" />
@@ -54,7 +54,7 @@ export function HistoryModal({ comic, onClose }: Props) {
               href={h.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm transition-colors hover:border-indigo-200 hover:bg-indigo-50/50 dark:border-slate-800 dark:hover:border-indigo-900 dark:hover:bg-indigo-500/10"
+              className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm transition-colors hover:border-rose-200 hover:bg-rose-50/50 dark:border-slate-800 dark:hover:border-rose-900 dark:hover:bg-rose-500/10"
             >
               <div>
                 <span className="font-medium text-slate-800 dark:text-slate-100">Chapter {h.chapter}</span>
