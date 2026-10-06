@@ -2,17 +2,90 @@ import type { Comic } from '../types/Comic';
 import type { HistoryEntry } from '../types/HistoryEntry';
 import type { APIResponse, AddOrUpdateResult } from '../types/APIResponse';
 
-// Set this to your deployed Google Apps Script Web App URL.
+// The backend URL can come from two places, in this order:
+//  1. A URL saved from inside the app (stored in this browser's localStorage), so a
+//     wrong/replaced deployment can be fixed without rebuilding the site.
+//  2. The VITE_APPS_SCRIPT_URL build-time value (e.g. a GitHub Actions secret).
 // e.g. https://script.google.com/macros/s/AKfycb.../exec
-const APPS_SCRIPT_URL: string =
+const URL_STORAGE_KEY = 'webcomic-tracker:apiUrl';
+const BUILD_TIME_URL: string =
   (import.meta.env.VITE_APPS_SCRIPT_URL as string | undefined) || '';
+
+function readSavedUrl(): string {
+  try {
+    return localStorage.getItem(URL_STORAGE_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+/** The URL requests are currently sent to. */
+export function getApiUrl(): string {
+  return readSavedUrl() || BUILD_TIME_URL;
+}
+
+export function getSavedApiUrl(): string {
+  return readSavedUrl();
+}
+
+export function hasBuildTimeUrl(): boolean {
+  return !!BUILD_TIME_URL;
+}
+
+export function saveApiUrl(url: string) {
+  localStorage.setItem(URL_STORAGE_KEY, url);
+}
+
+export function clearSavedApiUrl() {
+  try {
+    localStorage.removeItem(URL_STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Cleans up a pasted deployment URL (trims whitespace, drops the browser's
+ * "/u/1/" account segment) and checks it looks like an Apps Script web app URL.
+ */
+export function normalizeApiUrl(raw: string): { url: string; error: string | null } {
+  let url = raw.trim().replace(/^["']|["']$/g, '');
+  if (!url) return { url: '', error: 'Paste your Apps Script Web app URL first.' };
+  url = url.replace(/\/macros\/u\/\d+\//, '/macros/').replace(/[?#].*$/, '');
+  if (!/^https:\/\/script\.google\.com\/(a\/macros\/[^/]+|macros)\/s\/[^/]+\/exec$/.test(url)) {
+    return {
+      url,
+      error:
+        'That doesn\u2019t look like a Web app URL. It should look like https://script.google.com/macros/s/\u2026/exec (copy it from Deploy \u2192 Manage deployments).',
+    };
+  }
+  return { url, error: null };
+}
+
+/** Calls the backend at `url` and reports whether it answers like this app's Apps Script. */
+export async function testApiUrl(url: string): Promise<{ ok: boolean; message: string }> {
+  try {
+    const res = await fetch(`${url}?action=getComics`, { method: 'GET' });
+    if (!res.ok) {
+      return { ok: false, message: `Google responded with HTTP ${res.status}. This deployment may be deleted, or its access isn\u2019t set to \u201cAnyone\u201d.` };
+    }
+    const json = await res.json();
+    if (json && json.success) {
+      const n = Array.isArray(json.data) ? json.data.length : 0;
+      return { ok: true, message: `Connected \u2014 found ${n} comic${n === 1 ? '' : 's'}.` };
+    }
+    return { ok: false, message: json?.error || 'The backend answered but reported an error.' };
+  } catch {
+    return { ok: false, message: 'Could not reach that URL. Check the address, your connection, and that access is set to \u201cAnyone\u201d.' };
+  }
+}
 
 export class ApiError extends Error {}
 
 function assertConfigured() {
-  if (!APPS_SCRIPT_URL) {
+  if (!getApiUrl()) {
     throw new ApiError(
-      'The Apps Script backend URL is not configured. Set VITE_APPS_SCRIPT_URL in your .env file.'
+      'The Apps Script backend URL is not set. Add it under \u201cBackend connection\u201d.'
     );
   }
 }
@@ -22,7 +95,7 @@ async function get<T>(action: string, params: Record<string, string> = {}): Prom
   const qs = new URLSearchParams({ action, ...params }).toString();
   let res: Response;
   try {
-    res = await fetch(`${APPS_SCRIPT_URL}?${qs}`, { method: 'GET' });
+    res = await fetch(`${getApiUrl()}?${qs}`, { method: 'GET' });
   } catch {
     throw new ApiError('Could not reach the Google Sheets backend. Check your network connection.');
   }
@@ -33,7 +106,7 @@ async function post<T>(action: string, data: unknown): Promise<T> {
   assertConfigured();
   let res: Response;
   try {
-    res = await fetch(APPS_SCRIPT_URL, {
+    res = await fetch(getApiUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight on Apps Script
       body: JSON.stringify({ action, data }),
@@ -62,7 +135,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
 
 export const api = {
   isConfigured(): boolean {
-    return !!APPS_SCRIPT_URL;
+    return !!getApiUrl();
   },
 
   async getComics(): Promise<Comic[]> {

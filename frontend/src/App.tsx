@@ -17,6 +17,7 @@ import type { Comic, DateFilter, SortOption } from './types/Comic';
 import { daysSince } from './services/normalization';
 import { exportComicsAsCsv, exportComicsAsJson, parseImportedJson } from './services/export';
 import { AlertIcon, RefreshIcon } from './components/Icons';
+import { BackendSettings } from './components/BackendSettings';
 
 function usePersistedState<T>(key: string, initial: T): [T, (v: T) => void] {
   const [value, setValue] = useState<T>(() => {
@@ -316,13 +317,7 @@ function AppInner() {
       }
     >
       {!api.isConfigured() && (
-        <div className="card flex items-start gap-3 border-gold/40 bg-gold/10 p-4 text-sm text-[#8a6100] dark:border-gold/30 dark:bg-gold/10 dark:text-gold">
-          <AlertIcon className="mt-0.5 h-4 w-4 shrink-0" />
-          <p>
-            <strong className="font-semibold">Backend not configured.</strong> Set <code className="rounded bg-gold/20 px-1 py-0.5">VITE_APPS_SCRIPT_URL</code> in your <code className="rounded bg-gold/20 px-1 py-0.5">.env</code> file
-            to your deployed Google Apps Script Web App URL, then rebuild. See the README for setup steps.
-          </p>
-        </div>
+        <BackendSettings defaultOpen onChanged={() => loadComics()} />
       )}
 
       <AddComicForm comics={comics} onSubmit={(info) => submitAddOrUpdate(info)} busy={savingAdd} />
@@ -355,6 +350,9 @@ function AppInner() {
           <button type="button" className="btn btn-secondary" onClick={() => loadComics()}>
             <RefreshIcon className="h-3.5 w-3.5" /> Try again
           </button>
+          <div className="w-full max-w-md text-left text-slate-700 dark:text-slate-200">
+            <BackendSettings defaultOpen onChanged={() => loadComics()} />
+          </div>
         </div>
       ) : (
         <>
@@ -404,6 +402,8 @@ function AppInner() {
           busy={savingEdit}
         />
       )}
+
+      {api.isConfigured() && !loadError && !loading && <BackendSettings onChanged={() => loadComics()} />}
 
       {historyComic && <HistoryModal comic={historyComic} onClose={() => setHistoryComic(null)} />}
 

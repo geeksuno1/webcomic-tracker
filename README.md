@@ -380,3 +380,10 @@ frontend/src/
   account if access is "Only myself".
 - **Changes to `Code.gs` don't show up:** you edited the script but didn't
   create a new deployment version (see step 2 above).
+
+## Changing the backend URL without rebuilding
+
+Open **Backend connection** (bottom of the page, or shown automatically if the backend can't be reached), paste the
+Apps Script Web app URL (Deploy → Manage deployments) and press **Save URL**. It is cleaned up (a browser-added `/u/1/`
+is removed), checked, and stored in that browser only. A saved URL takes priority over `VITE_APPS_SCRIPT_URL`;
+"Remove saved URL" goes back to the built-in one.
