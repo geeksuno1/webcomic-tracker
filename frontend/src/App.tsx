@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ToastProvider, useToast } from './components/Toast';
 import { DashboardShell } from './components/Dashboard';
 import { StatsCards } from './components/StatsCards';
@@ -12,12 +12,14 @@ import { ConfirmDialog } from './components/ConfirmDialog';
 import { ViewToggle, type ViewMode } from './components/ViewToggle';
 import { AlphaIndex, firstLetterOf } from './components/AlphaIndex';
 import { Pagination } from './components/Pagination';
-import { api, ApiError } from './services/api';
+import { api, ApiError, setVaultExpiredHandler, setVaultToken } from './services/api';
 import type { Comic, DateFilter, SortOption } from './types/Comic';
 import { daysSince } from './services/normalization';
 import { exportComicsAsCsv, exportComicsAsJson, parseImportedJson } from './services/export';
 import { AlertIcon, RefreshIcon } from './components/Icons';
 import { BackendSettings } from './components/BackendSettings';
+import { VaultDialog, type VaultDialogMode } from './components/VaultDialog';
+import { VaultBar } from './components/VaultBar';
 
 function usePersistedState<T>(key: string, initial: T): [T, (v: T) => void] {
   const [value, setValue] = useState<T>(() => {
@@ -92,6 +94,108 @@ function AppInner() {
   const [historyComic, setHistoryComic] = useState<Comic | null>(null);
   const [deletingComic, setDeletingComic] = useState<Comic | null>(null);
 
+  // ---- Vault ------------------------------------------------------------
+  // Vault titles live only in memory while unlocked (never cached in the browser)
+  // and the session token is memory-only too, so a reload always re-locks.
+  const VAULT_IDLE_MS = 10 * 60 * 1000;
+  const [vaultTokenState, setVaultTokenState] = useState('');
+  const [vaultComics, setVaultComics] = useState<Comic[]>([]);
+  const [inVaultView, setInVaultView] = useState(false);
+  const [vaultDialog, setVaultDialog] = useState<null | 'checking' | VaultDialogMode>(null);
+  const unlocked = !!vaultTokenState;
+  const lastActivity = useRef(Date.now());
+
+  function clearVaultLocally(message?: string) {
+    setVaultToken('');
+    setVaultTokenState('');
+    setVaultComics([]);
+    setInVaultView(false);
+    setEditingComic((c) => (c?.inVault ? null : c));
+    setHistoryComic((c) => (c?.inVault ? null : c));
+    setDeletingComic((c) => (c?.inVault ? null : c));
+    if (message) toast.show(message, 'success');
+  }
+
+  function lockVault(message?: string) {
+    void api.vaultLock(); // must run before the token is cleared
+    clearVaultLocally(message);
+  }
+
+  async function loadVault() {
+    try {
+      setVaultComics(await api.vaultList());
+    } catch {
+      /* an expired session is handled by the expiry handler */
+    }
+  }
+
+  async function reloadAll() {
+    await loadComics();
+    if (unlocked) await loadVault();
+  }
+
+  async function openVaultEntrance() {
+    if (!api.isConfigured()) return;
+    if (unlocked) {
+      setInVaultView((v) => !v);
+      return;
+    }
+    setVaultDialog('checking');
+    try {
+      const { configured } = await api.vaultStatus();
+      setVaultDialog(configured ? 'unlock' : 'setup');
+    } catch {
+      setVaultDialog(null);
+      toast.show('Couldn\u2019t reach the backend. Update the Apps Script deployment, then try again.', 'error');
+    }
+  }
+
+  async function handleVaultUnlocked(token: string) {
+    const wasChange = vaultDialog === 'change';
+    setVaultToken(token);
+    setVaultTokenState(token);
+    setVaultDialog(null);
+    lastActivity.current = Date.now();
+    await loadVault();
+    if (!wasChange) setInVaultView(true);
+    else toast.show('Vault password changed.', 'success');
+  }
+
+  // Hidden entrance #1: Ctrl/Cmd + Shift + L.  (#2 is tapping the logo three times.)
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.code === 'KeyL') {
+        e.preventDefault();
+        void openVaultEntrance();
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
+  // Server says the session is gone (expired / password changed elsewhere).
+  useEffect(() => {
+    setVaultExpiredHandler(() => clearVaultLocally('The Vault locked itself.'));
+    return () => setVaultExpiredHandler(null);
+  });
+
+  // Auto-lock after 10 idle minutes.
+  useEffect(() => {
+    if (!unlocked) return;
+    lastActivity.current = Date.now();
+    const bump = () => { lastActivity.current = Date.now(); };
+    const events = ['pointerdown', 'pointermove', 'keydown', 'scroll', 'touchstart'] as const;
+    events.forEach((ev) => window.addEventListener(ev, bump, { passive: true }));
+    const timer = setInterval(() => {
+      if (Date.now() - lastActivity.current > VAULT_IDLE_MS) lockVault('Vault locked after 10 minutes of inactivity.');
+    }, 15_000);
+    return () => {
+      events.forEach((ev) => window.removeEventListener(ev, bump));
+      clearInterval(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unlocked]);
+
   async function loadComics(showToast = false) {
     setRefreshing(true);
     setLoadError(null);
@@ -115,13 +219,15 @@ function AppInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const activeComics = inVaultView ? vaultComics : comics;
+
   const websites = useMemo(
-    () => Array.from(new Set(comics.map((c) => c.website || c.domain).filter(Boolean))).sort(),
-    [comics]
+    () => Array.from(new Set(activeComics.map((c) => c.website || c.domain).filter(Boolean))).sort(),
+    [activeComics]
   );
 
   const visibleComics = useMemo(() => {
-    let list = [...comics];
+    let list = [...activeComics];
 
     if (search.trim()) {
       const q = search.trim().toLowerCase();
@@ -168,7 +274,7 @@ function AppInner() {
     });
 
     return list;
-  }, [comics, search, websiteFilter, dateFilter, sort]);
+  }, [activeComics, search, websiteFilter, dateFilter, sort]);
 
   const favorites = useMemo(
     () => comics.filter((c) => c.isFavorite).sort((a, b) => a.title.localeCompare(b.title)),
@@ -194,7 +300,7 @@ function AppInner() {
   // Reset to page 1 whenever the underlying result set changes shape.
   useEffect(() => {
     setPage(1);
-  }, [search, websiteFilter, dateFilter, sort, letterFilter, pageSize]);
+  }, [search, websiteFilter, dateFilter, sort, letterFilter, pageSize, inVaultView]);
 
   // Clamp the current page if the result set shrinks below it (e.g. after a delete).
   useEffect(() => {
@@ -207,13 +313,13 @@ function AppInner() {
   ) {
     setSavingAdd(true);
     try {
-      const result = await api.addOrUpdateComic({ ...info, forceOverwrite });
+      const result = await api.addOrUpdateComic({ ...info, forceOverwrite, ...(inVaultView ? { inVault: true } : {}) });
       if (result.status === 'needs_confirmation') {
         setPendingLowerChapter({ ...info, warning: result.warning || 'Replace the saved chapter?' });
         return;
       }
       setPendingLowerChapter(null);
-      await loadComics();
+      await reloadAll();
       const verb = result.status === 'created' ? 'added' : result.status === 'refreshed' ? 'refreshed' : 'updated';
       if (result.status === 'created' || result.status === 'updated') {
         toast.show(`Chapter Unlocked! "${result.comic.title}" — Ch. ${result.comic.chapter}`, 'unlock');
@@ -233,7 +339,7 @@ function AppInner() {
     setSavingEdit(true);
     try {
       await api.updateComic(editingComic.id, updates);
-      await loadComics();
+      await reloadAll();
       toast.show('Comic updated successfully.', 'success');
       setEditingComic(null);
     } catch (err) {
@@ -249,6 +355,7 @@ function AppInner() {
     try {
       await api.deleteComic(deletingComic.id, false);
       setComics((prev) => prev.filter((c) => c.id !== deletingComic.id));
+      setVaultComics((prev) => prev.filter((c) => c.id !== deletingComic.id));
       toast.show(`"${deletingComic.title}" removed from your tracker.`, 'success');
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'Unable to delete this comic. Please try again.';
@@ -262,11 +369,15 @@ function AppInner() {
     const nextValue = !comic.isFavorite;
     // Optimistic update — favoriting is a lightweight, standalone action that
     // never touches title/chapter/status, so it shouldn't wait on a full reload.
-    setComics((prev) => prev.map((c) => (c.id === comic.id ? { ...c, isFavorite: nextValue } : c)));
+    const patchFav = (value: boolean) => (prev: Comic[]) =>
+      prev.map((c) => (c.id === comic.id ? { ...c, isFavorite: value } : c));
+    setComics(patchFav(nextValue));
+    setVaultComics(patchFav(nextValue));
     try {
       await api.setFavorite(comic.id, nextValue);
     } catch (err) {
-      setComics((prev) => prev.map((c) => (c.id === comic.id ? { ...c, isFavorite: comic.isFavorite } : c)));
+      setComics(patchFav(comic.isFavorite));
+      setVaultComics(patchFav(comic.isFavorite));
       const message = err instanceof ApiError ? err.message : 'Unable to update favorite. Please try again.';
       toast.show(message, 'error');
     }
@@ -307,22 +418,36 @@ function AppInner() {
       darkMode={dark}
       onToggleDarkMode={toggle}
       lastSynced={lastSynced}
-      onRefresh={() => loadComics(true)}
+      onRefresh={async () => { await loadComics(true); if (unlocked) await loadVault(); }}
       refreshing={refreshing}
       onExportJson={() => exportComicsAsJson(comics)}
       onExportCsv={() => exportComicsAsCsv(comics)}
       onImportJson={handleImportJson}
+      onLogoSecret={openVaultEntrance}
       sidebar={
-        <FavoritesSidebar favorites={favorites} onToggleFavorite={handleToggleFavorite} onEdit={setEditingComic} />
+        inVaultView ? undefined : (
+          <FavoritesSidebar favorites={favorites} onToggleFavorite={handleToggleFavorite} onEdit={setEditingComic} />
+        )
       }
     >
       {!api.isConfigured() && (
         <BackendSettings defaultOpen onChanged={() => loadComics()} />
       )}
 
-      <AddComicForm comics={comics} onSubmit={(info) => submitAddOrUpdate(info)} busy={savingAdd} />
+      {unlocked && (
+        <VaultBar
+          inVaultView={inVaultView}
+          vaultCount={vaultComics.length}
+          onToggleView={() => setInVaultView((v) => !v)}
+          onLock={() => lockVault('Vault locked.')}
+          onChangePassword={() => setVaultDialog('change')}
+        />
+      )}
 
-      <StatsCards comics={comics} />
+      <AddComicForm comics={activeComics} onSubmit={(info) => submitAddOrUpdate(info)} busy={savingAdd} vaultMode={inVaultView} />
+
+      {/* Stats never include vault titles, so they are hidden inside the Vault. */}
+      {!inVaultView && <StatsCards comics={comics} />}
 
       <SearchAndFilters
         search={search}
@@ -400,7 +525,12 @@ function AppInner() {
             setDeletingComic(c);
           }}
           busy={savingEdit}
+          vaultAvailable={unlocked}
         />
+      )}
+
+      {vaultDialog && vaultDialog !== 'checking' && (
+        <VaultDialog mode={vaultDialog} onSuccess={handleVaultUnlocked} onClose={() => setVaultDialog(null)} />
       )}
 
       {api.isConfigured() && !loadError && !loading && <BackendSettings onChanged={() => loadComics()} />}

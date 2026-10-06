@@ -18,7 +18,7 @@ var HISTORY_SHEET_NAME = 'History';
 var COMICS_HEADERS = [
   'ID', 'Webcomic Name', 'Latest Completed Chapter', 'Latest Chapter URL',
   'Website', 'Domain', 'Date First Added', 'Date Last Updated', 'Notes',
-  'Normalized Title', 'Cover Image URL', 'Status', 'Favorite', 'Cover Position'
+  'Normalized Title', 'Cover Image URL', 'Status', 'Favorite', 'Cover Position', 'Vault'
 ];
 
 // Valid values for the Status column. Stored in the sheet exactly as written here.
@@ -85,10 +85,32 @@ function doPost(e) {
         result = updateComic(data.id, data);
         break;
       case 'deleteComic':
-        result = deleteComic(data.id, !!data.deleteHistory);
+        result = deleteComic(data.id, !!data.deleteHistory, data.vaultToken);
         break;
       case 'uploadCoverImage':
         result = uploadCoverImage(data);
+        break;
+      case 'getHistory':
+        // POST variant so a vault session token never travels in a URL.
+        result = getHistory(data.comicId, data.vaultToken);
+        break;
+      case 'vaultStatus':
+        result = vaultStatus();
+        break;
+      case 'vaultSetup':
+        result = vaultSetup(data.password);
+        break;
+      case 'vaultUnlock':
+        result = vaultUnlock(data.password);
+        break;
+      case 'vaultLock':
+        result = vaultLock(data.vaultToken);
+        break;
+      case 'vaultList':
+        result = vaultList(data.vaultToken);
+        break;
+      case 'vaultChangePassword':
+        result = vaultChangePassword(data.vaultToken, data.oldPassword, data.newPassword);
         break;
       default:
         return jsonResponse(apiError('Unknown or missing action: ' + action));
@@ -403,6 +425,7 @@ function comicRowToObject_(row) {
     status: row['Status'] || DEFAULT_COMIC_STATUS,
     isFavorite: row['Favorite'] === true || row['Favorite'] === 'TRUE' || row['Favorite'] === 'true',
     coverPosition: normalizeCoverPosition_(row['Cover Position']),
+    inVault: isVaultRow_(row),
     _row: row._row
   };
 }
@@ -428,14 +451,25 @@ function formatDateCell_(val) {
   return String(val);
 }
 
+/** Public library list: vault titles are NEVER included here. */
 function getComics() {
   var sheet = getComicsSheet_();
   var rows = readSheetAsObjects_(sheet);
-  return rows.map(comicRowToObject_);
+  return rows.filter(function (r) { return !isVaultRow_(r); }).map(comicRowToObject_);
 }
 
+/** Public lookup (GET). Vault titles look exactly like "not found". */
 function getComic(id) {
   if (!id) throw new Error('Missing comic id');
+  var rows = readSheetAsObjects_(getComicsSheet_());
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i]['ID'] === id) return isVaultRow_(rows[i]) ? null : comicRowToObject_(rows[i]);
+  }
+  return null;
+}
+
+/** Internal lookup that ignores the vault flag. Only call after authorising the caller. */
+function getComicAny_(id) {
   var rows = readSheetAsObjects_(getComicsSheet_());
   for (var i = 0; i < rows.length; i++) {
     if (rows[i]['ID'] === id) return comicRowToObject_(rows[i]);
@@ -446,7 +480,7 @@ function getComic(id) {
 function findComicByNormalizedTitle(normalizedTitle) {
   var rows = readSheetAsObjects_(getComicsSheet_());
   for (var i = 0; i < rows.length; i++) {
-    if (rows[i]['Normalized Title'] === normalizedTitle) return comicRowToObject_(rows[i]);
+    if (rows[i]['Normalized Title'] === normalizedTitle && !isVaultRow_(rows[i])) return comicRowToObject_(rows[i]);
   }
   return null;
 }
@@ -462,8 +496,12 @@ function addComic(data) {
     var normalizedTitle = normalizeTitle_(data.title);
     var existing = findComicByNormalizedTitleUnlocked_(sheet, normalizedTitle);
     if (existing) {
+      // Never reveal that a vault title exists to a caller without a vault session.
+      if (existing.inVault && !isVaultSession_(data.vaultToken)) throw new Error('Unable to save this title.');
       throw new Error('A comic with this title already exists (id: ' + existing.id + '). Use addOrUpdateComic instead.');
     }
+    var wantsVault = data.inVault === true;
+    if (wantsVault) requireVaultSession_(data.vaultToken);
 
     var id = generateId_('comic');
     var today = todayStr_();
@@ -481,7 +519,8 @@ function addComic(data) {
       data.coverImageUrl || '',
       normalizeStatus_(data.status),
       !!data.isFavorite,
-      normalizeCoverPosition_(data.coverPosition)
+      normalizeCoverPosition_(data.coverPosition),
+      wantsVault
     ];
     sheet.appendRow(row);
 
@@ -494,7 +533,7 @@ function addComic(data) {
       dateCompleted: today
     });
 
-    return getComic(id);
+    return getComicAny_(id);
   } finally {
     lock.releaseLock();
   }
@@ -512,6 +551,13 @@ function updateComic(id, data) {
       if (rows[i]['ID'] === id) { target = rows[i]; break; }
     }
     if (!target) throw new Error('Comic not found: ' + id);
+    // Vault titles can only be touched with a live vault session, and otherwise
+    // look exactly like a missing row.
+    var targetInVault = isVaultRow_(target);
+    if (targetInVault && !isVaultSession_(data.vaultToken)) throw new Error('Comic not found: ' + id);
+    // Moving a title into or out of the vault also needs a session.
+    var vaultChange = data.inVault !== undefined && !!data.inVault !== targetInVault;
+    if (vaultChange) requireVaultSession_(data.vaultToken);
 
     validateComicInput_(data, true);
 
@@ -538,14 +584,17 @@ function updateComic(id, data) {
       title, chapter, url, website, domain,
       target['Date First Added'], dateLastUpdated, notes, normalizedTitle, coverImageUrl || '', status, isFavorite, coverPosition
     ]]);
+    if (vaultChange) {
+      sheet.getRange(rowNum, vaultColumn_(sheet)).setValue(!!data.inVault);
+    }
 
-    return getComic(id);
+    return getComicAny_(id);
   } finally {
     lock.releaseLock();
   }
 }
 
-function deleteComic(id, deleteHistory) {
+function deleteComic(id, deleteHistory, vaultToken) {
   var lock = LockService.getScriptLock();
   lock.waitLock(LOCK_TIMEOUT_MS);
   try {
@@ -557,6 +606,7 @@ function deleteComic(id, deleteHistory) {
       if (rows[i]['ID'] === id) { target = rows[i]; break; }
     }
     if (!target) throw new Error('Comic not found: ' + id);
+    if (isVaultRow_(target)) requireVaultSession_(vaultToken);
     sheet.deleteRow(target._row);
 
     if (deleteHistory) {
@@ -594,12 +644,21 @@ function addOrUpdateComic(data) {
     var website = data.website || websiteNameFromDomain_(domain);
     var newChapter = Number(data.chapter);
 
+    if (existing && existing.inVault && !isVaultSession_(data.vaultToken)) {
+      // Same answer whether or not a hidden title exists: nothing is revealed.
+      throw new Error('Unable to save this title.');
+    }
+    var wantsVault = data.inVault === true;
+    var vaultChange = data.inVault !== undefined && (!existing || !!data.inVault !== existing.inVault);
+    if (vaultChange) requireVaultSession_(data.vaultToken);
+
     if (!existing) {
       var id = generateId_('comic');
       var row = [
         id, data.title, newChapter, data.url, website, domain,
         today, today, data.notes || '', normalizedTitle, data.coverImageUrl || '',
-        normalizeStatus_(data.status), !!data.isFavorite, normalizeCoverPosition_(data.coverPosition)
+        normalizeStatus_(data.status), !!data.isFavorite, normalizeCoverPosition_(data.coverPosition),
+        wantsVault
       ];
       sheet.appendRow(row);
       addHistoryEntryUnlocked_({
@@ -607,7 +666,7 @@ function addOrUpdateComic(data) {
         website: website, dateCompleted: today
       });
       return {
-        comic: getComic(id),
+        comic: getComicAny_(id),
         status: 'created',
         warning: null
       };
@@ -652,6 +711,10 @@ function addOrUpdateComic(data) {
       normalizedTitle, coverImageUrl || '', status, isFavorite, coverPosition
     ]]);
 
+    if (vaultChange) {
+      sheet.getRange(existing._row, vaultColumn_(sheet)).setValue(!!data.inVault);
+    }
+
     if (materialChange) {
       addHistoryEntryUnlocked_({
         comicId: existing.id, title: data.title, chapter: newChapter, url: data.url,
@@ -660,7 +723,7 @@ function addOrUpdateComic(data) {
     }
 
     return {
-      comic: getComic(existing.id),
+      comic: getComicAny_(existing.id),
       status: isSame ? 'refreshed' : 'updated',
       warning: null
     };
@@ -712,8 +775,11 @@ function historyRowToObject_(row) {
   };
 }
 
-function getHistory(comicId) {
+function getHistory(comicId, vaultToken) {
   if (!comicId) throw new Error('Missing comicId');
+  // History rows carry the title, so a vault comic's history is vault-only too.
+  var owner = getComicAny_(comicId);
+  if (owner && owner.inVault && !isVaultSession_(vaultToken)) return [];
   var rows = readSheetAsObjects_(getHistorySheet_());
   var out = [];
   for (var i = 0; i < rows.length; i++) {
@@ -748,6 +814,204 @@ function addHistoryEntryUnlocked_(data) {
     data.website || '', data.dateCompleted || today, today
   ]);
   return { id: id };
+}
+
+// ---------------------------------------------------------------------------
+// VAULT (password-protected, server-enforced)
+// ---------------------------------------------------------------------------
+//
+// Titles whose "Vault" column is TRUE are withheld from every public endpoint
+// (getComics, getComic, getHistory, duplicate checks). They are only readable or
+// writable with a session token obtained by unlocking with the vault password.
+//
+//  - The password is never stored: only a salted, iterated SHA-256 hash lives in
+//    Script Properties (visible to the script owner only).
+//  - Sessions live in CacheService with a sliding VAULT_SESSION_SECONDS idle
+//    timeout; changing the password invalidates every session.
+//  - Wrong guesses are rate-limited: VAULT_MAX_FAILS in a row locks unlocking for
+//    VAULT_LOCKOUT_SECONDS. (The limit is global, because Apps Script can't see the
+//    caller's IP, so someone hammering the URL can briefly lock you out too.)
+//
+// NOTE: this protects the web app. Anyone with edit/view access to the Google Sheet
+// itself, or to the cover images in Drive, can still see vault titles there.
+
+var VAULT_SESSION_SECONDS = 600;     // 10 min idle
+var VAULT_MAX_FAILS = 5;
+var VAULT_LOCKOUT_SECONDS = 900;     // 15 min
+var VAULT_HASH_ROUNDS = 3000;
+var VAULT_MIN_PASSWORD_LENGTH = 6;
+
+function isVaultRow_(row) {
+  var v = row['Vault'];
+  return v === true || v === 'TRUE' || v === 'true';
+}
+
+/** 1-based column number of the Vault column (added to the sheet automatically if missing). */
+function vaultColumn_(sheet) {
+  var lastCol = Math.max(sheet.getLastColumn(), 1);
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  var idx = headers.indexOf('Vault');
+  if (idx === -1) throw new Error('Vault column is missing from the Comics sheet.');
+  return idx + 1;
+}
+
+function bytesToHex_(bytes) {
+  var out = '';
+  for (var i = 0; i < bytes.length; i++) {
+    var b = bytes[i] < 0 ? bytes[i] + 256 : bytes[i];
+    out += (b < 16 ? '0' : '') + b.toString(16);
+  }
+  return out;
+}
+
+function hashVaultPassword_(password, salt) {
+  var h = salt + '|' + password;
+  for (var i = 0; i < VAULT_HASH_ROUNDS; i++) {
+    h = bytesToHex_(Utilities.computeDigest(
+      Utilities.DigestAlgorithm.SHA_256, h + '|' + salt, Utilities.Charset.UTF_8));
+  }
+  return h;
+}
+
+function safeEquals_(a, b) {
+  a = String(a); b = String(b);
+  if (a.length !== b.length) return false;
+  var diff = 0;
+  for (var i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+function vaultProps_() { return PropertiesService.getScriptProperties(); }
+function vaultCache_() { return CacheService.getScriptCache(); }
+
+function vaultConfigured_() {
+  return !!vaultProps_().getProperty('VAULT_HASH');
+}
+
+function vaultEpoch_() {
+  return vaultProps_().getProperty('VAULT_EPOCH') || '0';
+}
+
+function newVaultSession_() {
+  var token = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
+  vaultCache_().put('vs:' + token, vaultEpoch_(), VAULT_SESSION_SECONDS);
+  return token;
+}
+
+/** True if the token is a live vault session. Each successful check slides the idle timeout. */
+function isVaultSession_(token) {
+  if (!token || typeof token !== 'string' || token.length < 32) return false;
+  var cache = vaultCache_();
+  var v = cache.get('vs:' + token);
+  if (v === null || v === undefined || String(v) !== vaultEpoch_()) return false;
+  cache.put('vs:' + token, v, VAULT_SESSION_SECONDS);
+  return true;
+}
+
+function requireVaultSession_(token) {
+  if (!isVaultSession_(token)) throw new Error('The vault is locked. Unlock it and try again.');
+}
+
+function validateNewVaultPassword_(password) {
+  if (typeof password !== 'string' || password.length < VAULT_MIN_PASSWORD_LENGTH) {
+    throw new Error('Choose a password of at least ' + VAULT_MIN_PASSWORD_LENGTH + ' characters.');
+  }
+  if (password.length > 200) throw new Error('That password is too long.');
+}
+
+function storeVaultPassword_(password) {
+  var salt = Utilities.getUuid();
+  var props = vaultProps_();
+  props.setProperty('VAULT_SALT', salt);
+  props.setProperty('VAULT_HASH', hashVaultPassword_(password, salt));
+  // Bumping the epoch invalidates every session issued before this point.
+  props.setProperty('VAULT_EPOCH', String(Number(vaultEpoch_()) + 1));
+}
+
+/** Throws if unlocking is currently locked out; otherwise checks the password. */
+function checkVaultPassword_(password) {
+  var cache = vaultCache_();
+  if (cache.get('vault_lockout')) {
+    throw new Error('Too many wrong passwords. Try again in a few minutes.');
+  }
+  var props = vaultProps_();
+  var ok = typeof password === 'string' &&
+    safeEquals_(hashVaultPassword_(password, props.getProperty('VAULT_SALT') || ''), props.getProperty('VAULT_HASH') || '');
+  if (ok) {
+    cache.remove('vault_fails');
+    return;
+  }
+  var fails = Number(cache.get('vault_fails') || 0) + 1;
+  if (fails >= VAULT_MAX_FAILS) {
+    cache.put('vault_lockout', '1', VAULT_LOCKOUT_SECONDS);
+    cache.remove('vault_fails');
+    throw new Error('Too many wrong passwords. Try again in a few minutes.');
+  }
+  cache.put('vault_fails', String(fails), VAULT_LOCKOUT_SECONDS);
+  throw new Error('Incorrect password. ' + (VAULT_MAX_FAILS - fails) + ' attempt' + (VAULT_MAX_FAILS - fails === 1 ? '' : 's') + ' left.');
+}
+
+function vaultStatus() {
+  return { configured: vaultConfigured_() };
+}
+
+/** First-time setup. Refuses if a password already exists. */
+function vaultSetup(password) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(LOCK_TIMEOUT_MS);
+  try {
+    if (vaultConfigured_()) throw new Error('The vault already has a password.');
+    validateNewVaultPassword_(password);
+    storeVaultPassword_(password);
+    return { token: newVaultSession_(), idleSeconds: VAULT_SESSION_SECONDS };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function vaultUnlock(password) {
+  if (!vaultConfigured_()) throw new Error('The vault has not been set up yet.');
+  checkVaultPassword_(password);
+  return { token: newVaultSession_(), idleSeconds: VAULT_SESSION_SECONDS };
+}
+
+function vaultLock(token) {
+  if (token && typeof token === 'string') vaultCache_().remove('vs:' + token);
+  return { locked: true };
+}
+
+function vaultList(token) {
+  requireVaultSession_(token);
+  var rows = readSheetAsObjects_(getComicsSheet_());
+  return rows.filter(isVaultRow_).map(comicRowToObject_);
+}
+
+function vaultChangePassword(token, oldPassword, newPassword) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(LOCK_TIMEOUT_MS);
+  try {
+    requireVaultSession_(token);
+    checkVaultPassword_(oldPassword);
+    validateNewVaultPassword_(newPassword);
+    storeVaultPassword_(newPassword);
+    // All sessions (including this one) are now invalid; hand back a fresh one.
+    return { token: newVaultSession_(), idleSeconds: VAULT_SESSION_SECONDS };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
+ * Forgot the vault password? Run this once from the Apps Script editor (select it,
+ * click Run). It removes the password and signs everyone out; your vault titles stay
+ * hidden and the next person to open the vault in the app sets a new password.
+ */
+function resetVaultPassword() {
+  var props = vaultProps_();
+  props.deleteProperty('VAULT_HASH');
+  props.deleteProperty('VAULT_SALT');
+  props.setProperty('VAULT_EPOCH', String(Number(vaultEpoch_()) + 1));
+  Logger.log('Vault password removed. Open the vault in the app to set a new one.');
 }
 
 // ---------------------------------------------------------------------------

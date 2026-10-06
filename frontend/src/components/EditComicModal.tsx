@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Comic } from '../types/Comic';
 import { COMIC_STATUSES, STATUS_LABELS } from '../types/Comic';
-import { HistoryIcon, PencilIcon, TrashIcon } from './Icons';
+import { HistoryIcon, LockIcon, PencilIcon, TrashIcon } from './Icons';
 import { CoverImagePicker } from './CoverImagePicker';
 import { CoverPositionAdjuster } from './CoverPositionAdjuster';
 
@@ -12,9 +12,11 @@ interface Props {
   onHistory: (comic: Comic) => void;
   onDelete: (comic: Comic) => void;
   busy: boolean;
+  /** True only while the Vault is unlocked; shows the "Keep in the Vault" switch. */
+  vaultAvailable?: boolean;
 }
 
-export function EditComicModal({ comic, onSave, onClose, onHistory, onDelete, busy }: Props) {
+export function EditComicModal({ comic, onSave, onClose, onHistory, onDelete, busy, vaultAvailable = false }: Props) {
   const [title, setTitle] = useState(comic.title);
   const [chapter, setChapter] = useState(String(comic.chapter));
   const [url, setUrl] = useState(comic.url);
@@ -24,6 +26,7 @@ export function EditComicModal({ comic, onSave, onClose, onHistory, onDelete, bu
   const [coverImageUrl, setCoverImageUrl] = useState(comic.coverImageUrl || '');
   const [coverPosition, setCoverPosition] = useState(comic.coverPosition ?? 50);
   const [status, setStatus] = useState<Comic['status']>(comic.status || 'Reading');
+  const [inVault, setInVault] = useState(!!comic.inVault);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -32,6 +35,8 @@ export function EditComicModal({ comic, onSave, onClose, onHistory, onDelete, bu
     await onSave({
       title: title.trim(), chapter: chapterNum, url: url.trim(), website: website.trim(),
       dateLastUpdated, notes: notes.trim(), coverImageUrl: coverImageUrl.trim(), status, coverPosition,
+      // Only sent when it actually changed, so ordinary edits never touch vault membership.
+      ...(vaultAvailable && inVault !== !!comic.inVault ? { inVault } : {}),
     });
   }
 
@@ -113,6 +118,24 @@ export function EditComicModal({ comic, onSave, onClose, onHistory, onDelete, bu
               Shown as an "Alt" link next to Open when filled in.
             </p>
           </div>
+          {vaultAvailable && (
+            <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-accent/30 bg-accent/5 p-2.5">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 accent-accent"
+                checked={inVault}
+                onChange={(e) => setInVault(e.target.checked)}
+              />
+              <span className="text-xs">
+                <span className="flex items-center gap-1 font-semibold text-slate-800 dark:text-slate-100">
+                  <LockIcon className="h-3.5 w-3.5 text-accent" /> Keep in the Vault
+                </span>
+                <span className="text-slate-500 dark:text-slate-400">
+                  Hidden from the library, stats, search and exports until the Vault is unlocked.
+                </span>
+              </span>
+            </label>
+          )}
         </div>
 
         <div className="flex shrink-0 justify-end gap-2 border-t border-ink/10 px-4 py-3 dark:border-white/10">

@@ -387,3 +387,22 @@ Open **Backend connection** (bottom of the page, or shown automatically if the b
 Apps Script Web app URL (Deploy → Manage deployments) and press **Save URL**. It is cleaned up (a browser-added `/u/1/`
 is removed), checked, and stored in that browser only. A saved URL takes priority over `VITE_APPS_SCRIPT_URL`;
 "Remove saved URL" goes back to the built-in one.
+
+## The Vault (password-protected titles)
+
+A separate, password-protected shelf for titles you don't want in the normal library.
+
+- **Opening it:** there is no visible button. Triple-tap/click the logo, or press **Ctrl/Cmd + Shift + L**. The first time,
+  you create the vault password; afterwards you unlock with it.
+- **Putting titles in:** while unlocked, open the Vault and use "Log to the Vault", or edit any library title and tick
+  **Keep in the Vault**. Untick it to move a title back.
+- **Server-enforced:** vault titles are never sent by the backend without a valid session token, and the token only
+  lives in memory. The Vault locks after 10 minutes idle, on "Lock now", and when the tab closes or reloads.
+- **Not counted anywhere:** vault titles are left out of stats, search, favorites and JSON/CSV exports of the library.
+- **Brute-force guard:** 5 wrong passwords lock unlocking for 15 minutes.
+- **Forgot the password?** In Apps Script, run `resetVaultPassword()` once, then create a new password in the app.
+  Your vault titles stay hidden.
+- **Backend update required:** paste the new `apps-script/Code.gs`, then Deploy → Manage deployments → Edit → **New version**.
+
+Limitation: the vault protects the web app. Anyone with access to the Google Sheet (a `Vault` column) or the Drive
+cover images can still see those titles.

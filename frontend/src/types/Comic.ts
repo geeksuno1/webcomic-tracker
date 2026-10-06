@@ -26,6 +26,8 @@ export interface Comic {
   isFavorite: boolean;
   /** Vertical focal point for the cropped cover thumbnail, 0 (top) – 100 (bottom); 50 = centered. */
   coverPosition: number;
+  /** True for titles kept in the password-protected vault. Only ever present while the vault is unlocked. */
+  inVault?: boolean;
 }
 
 export interface ParsedChapterInfo {

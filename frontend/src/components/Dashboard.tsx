@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { ChevronDownIcon, DownloadIcon, MoonIcon, RefreshIcon, SparkleIcon, SunIcon, UploadIcon } from './Icons';
 import { LOGO_DATA_URI } from '../assets/logo';
 
@@ -11,14 +11,26 @@ interface Props {
   onExportJson: () => void;
   onExportCsv: () => void;
   onImportJson: (file: File) => void;
+  /** Fired when the logo is tapped three times quickly (the Vault's hidden entrance). */
+  onLogoSecret?: () => void;
   sidebar?: ReactNode;
   children: ReactNode;
 }
 
 export function DashboardShell({
   darkMode, onToggleDarkMode, lastSynced, onRefresh, refreshing,
-  onExportJson, onExportCsv, onImportJson, sidebar, children,
+  onExportJson, onExportCsv, onImportJson, onLogoSecret, sidebar, children,
 }: Props) {
+  const taps = useRef<number[]>([]);
+  function handleLogoTap() {
+    const now = Date.now();
+    taps.current = [...taps.current.filter((t) => now - t < 900), now];
+    if (taps.current.length >= 3) {
+      taps.current = [];
+      onLogoSecret?.();
+    }
+  }
+
   return (
     <div className="mx-auto max-w-[1600px] px-4 py-6 sm:py-10">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -26,7 +38,9 @@ export function DashboardShell({
           <img
             src={LOGO_DATA_URI}
             alt="Manga Quest Log"
-            className="h-20 w-auto shrink-0 drop-shadow-sm sm:h-24"
+            className="h-20 w-auto shrink-0 select-none drop-shadow-sm sm:h-24"
+            onClick={handleLogoTap}
+            draggable={false}
             style={{ aspectRatio: '488 / 421' }}
           />
           <div>

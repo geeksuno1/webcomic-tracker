@@ -18,9 +18,11 @@ interface Props {
     notes: string;
   }) => Promise<void>;
   busy: boolean;
+  /** When true the entry is saved straight into the Vault (shown only while it is unlocked). */
+  vaultMode?: boolean;
 }
 
-export function AddComicForm({ comics, onSubmit, busy }: Props) {
+export function AddComicForm({ comics, onSubmit, busy, vaultMode = false }: Props) {
   const [url, setUrl] = useState('');
   const [parsed, setParsed] = useState<ParsedChapterInfo | null>(null);
   const [title, setTitle] = useState('');
@@ -108,7 +110,7 @@ export function AddComicForm({ comics, onSubmit, busy }: Props) {
     <form onSubmit={handleSubmit} className="card p-4 sm:p-5">
       <label htmlFor="chapter-url" className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
         <SparkleIcon className="h-4 w-4 text-accent" />
-        Log Your Latest Read
+        {vaultMode ? 'Log to the Vault' : 'Log Your Latest Read'}
       </label>
       <div className="mt-2 flex flex-col gap-2 sm:flex-row">
         <input

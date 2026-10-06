@@ -82,6 +82,20 @@ export async function testApiUrl(url: string): Promise<{ ok: boolean; message: s
 
 export class ApiError extends Error {}
 
+// ---- Vault session -------------------------------------------------------
+// The vault token lives in memory only (never localStorage), so closing or
+// reloading the tab always re-locks the vault. When set, it rides along on every
+// POST; the backend only honours it for vault titles.
+let vaultToken = '';
+let onVaultExpired: (() => void) | null = null;
+
+export function setVaultToken(token: string) {
+  vaultToken = token;
+}
+export function setVaultExpiredHandler(fn: (() => void) | null) {
+  onVaultExpired = fn;
+}
+
 function assertConfigured() {
   if (!getApiUrl()) {
     throw new ApiError(
@@ -109,7 +123,7 @@ async function post<T>(action: string, data: unknown): Promise<T> {
     res = await fetch(getApiUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight on Apps Script
-      body: JSON.stringify({ action, data }),
+      body: JSON.stringify({ action, data: vaultToken && data && typeof data === 'object' ? { ...(data as object), vaultToken } : data }),
     });
   } catch {
     throw new ApiError('Could not reach the Google Sheets backend. Check your network connection.');
@@ -128,6 +142,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
     throw new ApiError('The backend returned an unexpected response. Check the Apps Script deployment.');
   }
   if (!json.success) {
+    if (vaultToken && /^The vault is locked/i.test(json.error || '')) onVaultExpired?.();
     throw new ApiError(json.error || 'The backend reported an unknown error.');
   }
   return json.data as T;
@@ -147,7 +162,16 @@ export const api = {
   },
 
   async getHistory(comicId: string): Promise<HistoryEntry[]> {
-    return get<HistoryEntry[]>('getHistory', { comicId });
+    // POST so the vault token (if any) never appears in a URL. Falls back to GET
+    // if the backend hasn't been redeployed with the POST action yet.
+    try {
+      return await post<HistoryEntry[]>('getHistory', { comicId });
+    } catch (err) {
+      if (err instanceof ApiError && /unknown or missing action/i.test(err.message)) {
+        return get<HistoryEntry[]>('getHistory', { comicId });
+      }
+      throw err;
+    }
   },
 
   /** Asks the backend to fetch the page and pull a cover image URL out of it. */
@@ -175,6 +199,7 @@ export const api = {
     coverImageUrl?: string;
     status?: Comic['status'];
     forceOverwrite?: boolean;
+    inVault?: boolean;
   }): Promise<AddOrUpdateResult> {
     return post<AddOrUpdateResult>('addOrUpdateComic', data);
   },
@@ -190,5 +215,35 @@ export const api = {
 
   async deleteComic(id: string, deleteHistory = false): Promise<{ id: string; deleted: boolean }> {
     return post<{ id: string; deleted: boolean }>('deleteComic', { id, deleteHistory });
+  },
+
+  // ---- Vault -------------------------------------------------------------
+
+  async vaultStatus(): Promise<{ configured: boolean }> {
+    return post<{ configured: boolean }>('vaultStatus', {});
+  },
+
+  async vaultSetup(password: string): Promise<{ token: string; idleSeconds: number }> {
+    return post('vaultSetup', { password });
+  },
+
+  async vaultUnlock(password: string): Promise<{ token: string; idleSeconds: number }> {
+    return post('vaultUnlock', { password });
+  },
+
+  async vaultLock(): Promise<void> {
+    try {
+      await post('vaultLock', {});
+    } catch {
+      /* the session expires on its own anyway */
+    }
+  },
+
+  async vaultList(): Promise<Comic[]> {
+    return post<Comic[]>('vaultList', {});
+  },
+
+  async vaultChangePassword(oldPassword: string, newPassword: string): Promise<{ token: string; idleSeconds: number }> {
+    return post('vaultChangePassword', { oldPassword, newPassword });
   },
 };
