@@ -428,3 +428,10 @@ replaced by **Which series is this?**: pick one of your saved WeebCentral series
 **+ New series…** and type its name. The name you type becomes the series' saved title, so it is in the list next time.
 Enter the chapter number by hand, since it isn't in the link either. To add another opaque site, add its domain to
 `OPAQUE_TITLE_DOMAINS` in `frontend/src/services/parser.ts`.
+
+## Saving overlay
+
+Every save, edit, delete, cover upload, JSON import and vault password step greys out the page with a progress card
+("Inking your latest chapter…", "Redrawing the panels…", "Tearing out the page…", "Shelving your collection…" with a
+"3 of 12" counter) and then a green tick ("Chapter logged", "Changes saved", "Page removed"). It also covers the library
+refresh that follows a save ("Restocking the shelves…"). Captions live in `frontend/src/services/busy.ts` (`BUSY_TEXT`).

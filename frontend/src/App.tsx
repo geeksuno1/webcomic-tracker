@@ -16,6 +16,8 @@ import { api, ApiError, setVaultExpiredHandler, setVaultToken } from './services
 import type { Comic, DateFilter, SortOption } from './types/Comic';
 import { displayTitle } from './types/Comic';
 import { daysSince } from './services/normalization';
+import { SavingOverlay } from './components/SavingOverlay';
+import { busy } from './services/busy';
 import { exportComicsAsCsv, exportComicsAsJson, parseImportedJson } from './services/export';
 import { AlertIcon, RefreshIcon } from './components/Icons';
 import { BackendSettings } from './components/BackendSettings';
@@ -395,7 +397,9 @@ function AppInner() {
       }
       let created = 0;
       let updated = 0;
-      for (const item of items) {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        busy.progress(i, items.length, 'Shelving your collection…');
         const result = await api.addOrUpdateComic({
           title: item.title,
           chapter: item.chapter,
@@ -411,8 +415,10 @@ function AppInner() {
         else updated++;
       }
       await loadComics();
+      busy.finish('Collection shelved');
       toast.show(`Import complete — ${created} added, ${updated} updated.`, 'success');
     } catch {
+      busy.hide();
       toast.show('Unable to import that file. Make sure it is valid JSON exported from this tracker.', 'error');
     }
   }
@@ -566,6 +572,7 @@ function AppInner() {
           onCancel={() => setPendingLowerChapter(null)}
         />
       )}
+      <SavingOverlay />
     </DashboardShell>
   );
 }

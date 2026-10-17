@@ -1,6 +1,7 @@
 import type { Comic } from '../types/Comic';
 import type { HistoryEntry } from '../types/HistoryEntry';
 import type { APIResponse, AddOrUpdateResult } from '../types/APIResponse';
+import { withBusy, withRefreshBusy } from './busy';
 
 // The backend URL can come from two places, in this order:
 //  1. A URL saved from inside the app (stored in this browser's localStorage), so a
@@ -154,7 +155,7 @@ export const api = {
   },
 
   async getComics(): Promise<Comic[]> {
-    return get<Comic[]>('getComics');
+    return withRefreshBusy(() => get<Comic[]>('getComics'));
   },
 
   async getComic(id: string): Promise<Comic | null> {
@@ -186,7 +187,7 @@ export const api = {
 
   /** Uploads a pasted/selected image to Drive and returns its direct-embed URL. */
   async uploadCoverImage(imageBase64: string, mimeType: string, filename?: string): Promise<{ url: string; fileId: string }> {
-    return post<{ url: string; fileId: string }>('uploadCoverImage', { imageBase64, mimeType, filename });
+    return withBusy('uploadCoverImage', () => post<{ url: string; fileId: string }>('uploadCoverImage', { imageBase64, mimeType, filename }));
   },
 
   async addOrUpdateComic(data: {
@@ -203,11 +204,12 @@ export const api = {
     altTitle?: string;
     useAltTitle?: boolean;
   }): Promise<AddOrUpdateResult> {
-    return post<AddOrUpdateResult>('addOrUpdateComic', data);
+    // A "replace the lower chapter?" question isn't a finished save, so it skips the "done" caption.
+    return withBusy('addOrUpdateComic', () => post<AddOrUpdateResult>('addOrUpdateComic', data), (r) => r.status !== 'needs_confirmation');
   },
 
   async updateComic(id: string, data: Partial<Comic>): Promise<Comic> {
-    return post<Comic>('updateComic', { id, ...data });
+    return withBusy('updateComic', () => post<Comic>('updateComic', { id, ...data }));
   },
 
   /** Toggles favorite on its own — never touches title/chapter/status/etc. */
@@ -216,7 +218,7 @@ export const api = {
   },
 
   async deleteComic(id: string, deleteHistory = false): Promise<{ id: string; deleted: boolean }> {
-    return post<{ id: string; deleted: boolean }>('deleteComic', { id, deleteHistory });
+    return withBusy('deleteComic', () => post<{ id: string; deleted: boolean }>('deleteComic', { id, deleteHistory }));
   },
 
   // ---- Vault -------------------------------------------------------------
@@ -226,11 +228,11 @@ export const api = {
   },
 
   async vaultSetup(password: string): Promise<{ token: string; idleSeconds: number }> {
-    return post('vaultSetup', { password });
+    return withBusy('vaultSetup', () => post<{ token: string; idleSeconds: number }>('vaultSetup', { password }));
   },
 
   async vaultUnlock(password: string): Promise<{ token: string; idleSeconds: number }> {
-    return post('vaultUnlock', { password });
+    return withBusy('vaultUnlock', () => post<{ token: string; idleSeconds: number }>('vaultUnlock', { password }));
   },
 
   async vaultLock(): Promise<void> {
@@ -242,10 +244,10 @@ export const api = {
   },
 
   async vaultList(): Promise<Comic[]> {
-    return post<Comic[]>('vaultList', {});
+    return withRefreshBusy(() => post<Comic[]>('vaultList', {}));
   },
 
   async vaultChangePassword(oldPassword: string, newPassword: string): Promise<{ token: string; idleSeconds: number }> {
-    return post('vaultChangePassword', { oldPassword, newPassword });
+    return withBusy('vaultChangePassword', () => post<{ token: string; idleSeconds: number }>('vaultChangePassword', { oldPassword, newPassword }));
   },
 };
