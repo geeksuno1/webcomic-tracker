@@ -87,7 +87,7 @@ function AppInner() {
 
   const [savingAdd, setSavingAdd] = useState(false);
   const [pendingLowerChapter, setPendingLowerChapter] = useState<null | {
-    title: string; chapter: number; url: string; website: string; domain: string; coverImageUrl?: string; notes?: string; warning: string;
+    title: string; chapter: number; url: string; website: string; domain: string; coverImageUrl?: string; notes?: string; altTitle?: string; useAltTitle?: boolean; warning: string;
   }>(null);
 
   const [editingComic, setEditingComic] = useState<Comic | null>(null);
@@ -310,7 +310,7 @@ function AppInner() {
   }, [page, pageCount]);
 
   async function submitAddOrUpdate(
-    info: { title: string; chapter: number; url: string; website: string; domain: string; coverImageUrl?: string; notes?: string },
+    info: { title: string; chapter: number; url: string; website: string; domain: string; coverImageUrl?: string; notes?: string; altTitle?: string; useAltTitle?: boolean },
     forceOverwrite = false
   ) {
     setSavingAdd(true);

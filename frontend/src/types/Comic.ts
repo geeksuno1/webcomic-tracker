@@ -47,6 +47,8 @@ export interface ParsedChapterInfo {
   url: string;
   chapterDetected: boolean;
   titleDetected: boolean;
+  /** True for sites (e.g. WeebCentral) whose chapter links never contain the series name. */
+  titleIsOpaque: boolean;
 }
 
 export type SortOption =

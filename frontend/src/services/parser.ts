@@ -8,6 +8,16 @@ const KNOWN_WEBSITES: Record<string, string> = {
   'topmanhua.fan': 'TopManhua',
 };
 
+/**
+ * Sites whose chapter links carry no series name at all (e.g. weebcentral.com/chapters/<random id>).
+ * For these the title can't be read from the link, so the user picks/creates the series instead.
+ */
+const OPAQUE_TITLE_DOMAINS = ['weebcentral.com'];
+
+export function isOpaqueTitleDomain(domain: string): boolean {
+  return OPAQUE_TITLE_DOMAINS.some((d) => domain === d || domain.endsWith('.' + d));
+}
+
 /** Path segments that should never be treated as part of the comic title slug. */
 const IGNORED_SEGMENTS = new Set([
   'manga', 'manhua', 'manhwa', 'series', 'comic', 'comics', 'webtoon',
@@ -107,6 +117,7 @@ export function parseChapterUrl(rawUrl: string): ParsedChapterInfo {
     url,
     chapterDetected: chapter !== null,
     titleDetected: title.length > 0,
+    titleIsOpaque: isOpaqueTitleDomain(domain),
   };
 }
 

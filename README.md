@@ -417,3 +417,14 @@ Some sites don't put a readable title in the chapter link. Every comic now keeps
 In **Edit comic**, type an Alternate Title and choose which one the app shows. New chapters still match by URL title,
 so they update the same row and keep your alternate title and choice. Existing comics default to the URL title.
 Backend update required: paste the new `apps-script/Code.gs` and deploy a New version (the two columns are added automatically).
+
+### Logging with an alternate title, and WeebCentral
+
+The "Log Your Latest Read" form has an optional **Alternate Title** field. It is saved with the series; typing one makes the
+app show it, and it is pre-filled whenever you log another chapter of the same series.
+
+WeebCentral links (`weebcentral.com/chapters/<id>`) don't contain the series name, so for that site the Title field is
+replaced by **Which series is this?**: pick one of your saved WeebCentral series (listed by the name you see), or choose
+**+ New series…** and type its name. The name you type becomes the series' saved title, so it is in the list next time.
+Enter the chapter number by hand, since it isn't in the link either. To add another opaque site, add its domain to
+`OPAQUE_TITLE_DOMAINS` in `frontend/src/services/parser.ts`.
