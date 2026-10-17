@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { displayTitle } from '../types/Comic';
 import type { Comic } from '../types/Comic';
 import { daysSince } from '../services/normalization';
 import { ExternalLinkIcon, ImageOffIcon, PencilIcon, SparkleIcon } from './Icons';
@@ -41,7 +42,7 @@ export function HeroCard({ comic, onEdit }: Props) {
             Continue Your Journey
           </div>
           <h2 className="font-hero text-2xl leading-tight tracking-wide text-ink dark:text-[#F4F0E6] sm:text-3xl">
-            {comic.title}
+            {displayTitle(comic)}
           </h2>
           <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
             <span className="chip bg-accent/10 font-semibold text-accent">Ch. {comic.chapter}</span>

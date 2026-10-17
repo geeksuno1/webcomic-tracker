@@ -18,7 +18,8 @@ var HISTORY_SHEET_NAME = 'History';
 var COMICS_HEADERS = [
   'ID', 'Webcomic Name', 'Latest Completed Chapter', 'Latest Chapter URL',
   'Website', 'Domain', 'Date First Added', 'Date Last Updated', 'Notes',
-  'Normalized Title', 'Cover Image URL', 'Status', 'Favorite', 'Cover Position', 'Vault'
+  'Normalized Title', 'Cover Image URL', 'Status', 'Favorite', 'Cover Position', 'Vault',
+  'Alt Title', 'Use Alt Title'
 ];
 
 // Valid values for the Status column. Stored in the sheet exactly as written here.
@@ -426,6 +427,8 @@ function comicRowToObject_(row) {
     isFavorite: row['Favorite'] === true || row['Favorite'] === 'TRUE' || row['Favorite'] === 'true',
     coverPosition: normalizeCoverPosition_(row['Cover Position']),
     inVault: isVaultRow_(row),
+    altTitle: String(row['Alt Title'] || ''),
+    useAltTitle: isTruthy_(row['Use Alt Title']) && !!String(row['Alt Title'] || '').trim(),
     _row: row._row
   };
 }
@@ -520,7 +523,9 @@ function addComic(data) {
       normalizeStatus_(data.status),
       !!data.isFavorite,
       normalizeCoverPosition_(data.coverPosition),
-      wantsVault
+      wantsVault,
+      cleanAltTitle_(data.altTitle),
+      !!data.useAltTitle && !!cleanAltTitle_(data.altTitle)
     ];
     sheet.appendRow(row);
 
@@ -587,6 +592,7 @@ function updateComic(id, data) {
     if (vaultChange) {
       sheet.getRange(rowNum, vaultColumn_(sheet)).setValue(!!data.inVault);
     }
+    writeAltTitle_(sheet, rowNum, data, target['Alt Title'], target['Use Alt Title']);
 
     return getComicAny_(id);
   } finally {
@@ -658,7 +664,9 @@ function addOrUpdateComic(data) {
         id, data.title, newChapter, data.url, website, domain,
         today, today, data.notes || '', normalizedTitle, data.coverImageUrl || '',
         normalizeStatus_(data.status), !!data.isFavorite, normalizeCoverPosition_(data.coverPosition),
-        wantsVault
+        wantsVault,
+        cleanAltTitle_(data.altTitle),
+        !!data.useAltTitle && !!cleanAltTitle_(data.altTitle)
       ];
       sheet.appendRow(row);
       addHistoryEntryUnlocked_({
@@ -714,6 +722,7 @@ function addOrUpdateComic(data) {
     if (vaultChange) {
       sheet.getRange(existing._row, vaultColumn_(sheet)).setValue(!!data.inVault);
     }
+    writeAltTitle_(sheet, existing._row, data, existing.altTitle, existing.useAltTitle);
 
     if (materialChange) {
       addHistoryEntryUnlocked_({
@@ -738,6 +747,38 @@ function findComicByNormalizedTitleUnlocked_(sheet, normalizedTitle) {
     if (rows[i]['Normalized Title'] === normalizedTitle) return comicRowToObject_(rows[i]);
   }
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// ALTERNATE TITLE
+// "Webcomic Name" always holds the title taken from the chapter URL (it is what
+// new chapters are matched against). "Alt Title" is a display-only name the user
+// chooses; "Use Alt Title" says which of the two the app shows.
+// ---------------------------------------------------------------------------
+
+function isTruthy_(v) {
+  return v === true || v === 'TRUE' || v === 'true';
+}
+
+function cleanAltTitle_(v) {
+  if (v === undefined || v === null) return '';
+  return String(v).replace(/\s+/g, ' ').trim().substring(0, 200);
+}
+
+function columnByHeader_(sheet, header) {
+  var lastCol = Math.max(sheet.getLastColumn(), 1);
+  var idx = sheet.getRange(1, 1, 1, lastCol).getValues()[0].indexOf(header);
+  if (idx === -1) throw new Error(header + ' column is missing from the Comics sheet.');
+  return idx + 1;
+}
+
+/** Writes Alt Title / Use Alt Title only when the caller sent them; otherwise leaves both untouched. */
+function writeAltTitle_(sheet, rowNum, data, currentAlt, currentUse) {
+  if (data.altTitle === undefined && data.useAltTitle === undefined) return;
+  var alt = data.altTitle !== undefined ? cleanAltTitle_(data.altTitle) : cleanAltTitle_(currentAlt);
+  var use = data.useAltTitle !== undefined ? !!data.useAltTitle : isTruthy_(currentUse);
+  sheet.getRange(rowNum, columnByHeader_(sheet, 'Alt Title')).setValue(alt);
+  sheet.getRange(rowNum, columnByHeader_(sheet, 'Use Alt Title')).setValue(use && !!alt);
 }
 
 function validateComicInput_(data, isUpdate) {

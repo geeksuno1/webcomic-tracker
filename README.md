@@ -406,3 +406,14 @@ A separate, password-protected shelf for titles you don't want in the normal lib
 
 Limitation: the vault protects the web app. Anyone with access to the Google Sheet (a `Vault` column) or the Drive
 cover images can still see those titles.
+
+## Alternate titles
+
+Some sites don't put a readable title in the chapter link. Every comic now keeps two names:
+
+- **URL Title** (sheet column `Webcomic Name`): taken from the chapter link and used to match new chapters to the series.
+- **Alternate Title** (sheet columns `Alt Title` and `Use Alt Title`): your own display name.
+
+In **Edit comic**, type an Alternate Title and choose which one the app shows. New chapters still match by URL title,
+so they update the same row and keep your alternate title and choice. Existing comics default to the URL title.
+Backend update required: paste the new `apps-script/Code.gs` and deploy a New version (the two columns are added automatically).

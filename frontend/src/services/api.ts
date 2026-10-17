@@ -200,6 +200,8 @@ export const api = {
     status?: Comic['status'];
     forceOverwrite?: boolean;
     inVault?: boolean;
+    altTitle?: string;
+    useAltTitle?: boolean;
   }): Promise<AddOrUpdateResult> {
     return post<AddOrUpdateResult>('addOrUpdateComic', data);
   },

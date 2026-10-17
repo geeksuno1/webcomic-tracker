@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { displayTitle } from '../types/Comic';
 import type { Comic } from '../types/Comic';
 import { STATUS_LABELS } from '../types/Comic';
 import { formatDateReadable, daysSince } from '../services/normalization';
@@ -66,7 +67,7 @@ export function ComicTable({ comics, view = 'list', onEdit, onToggleFavorite }: 
                   <CoverThumb comic={c} className="h-14 w-10" />
                 </td>
                 <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">
-                  {c.title}
+                  {displayTitle(c)}
                   <StatusBadge status={c.status} className="ml-2" />
                 </td>
                 <td className="px-4 py-3">
@@ -101,7 +102,7 @@ export function ComicTable({ comics, view = 'list', onEdit, onToggleFavorite }: 
                 <div className="flex items-start gap-1.5 font-semibold text-slate-800 dark:text-slate-100">
                   <FavoriteToggle comic={c} onToggleFavorite={onToggleFavorite} />
                   <span>
-                    {c.title}
+                    {displayTitle(c)}
                     <StatusBadge status={c.status} className="ml-2" />
                   </span>
                 </div>
@@ -220,7 +221,7 @@ function BigCard({
       />
       <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold leading-snug text-slate-800 dark:text-slate-100">{comic.title}</h3>
+          <h3 className="font-semibold leading-snug text-slate-800 dark:text-slate-100">{displayTitle(comic)}</h3>
           <span className="chip shrink-0 bg-accent/10 font-semibold text-accent">
             Ch. {comic.chapter}
           </span>

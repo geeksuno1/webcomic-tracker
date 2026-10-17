@@ -14,6 +14,7 @@ import { AlphaIndex, firstLetterOf } from './components/AlphaIndex';
 import { Pagination } from './components/Pagination';
 import { api, ApiError, setVaultExpiredHandler, setVaultToken } from './services/api';
 import type { Comic, DateFilter, SortOption } from './types/Comic';
+import { displayTitle } from './types/Comic';
 import { daysSince } from './services/normalization';
 import { exportComicsAsCsv, exportComicsAsJson, parseImportedJson } from './services/export';
 import { AlertIcon, RefreshIcon } from './components/Icons';
@@ -234,6 +235,7 @@ function AppInner() {
       list = list.filter(
         (c) =>
           c.title.toLowerCase().includes(q) ||
+          (c.altTitle || '').toLowerCase().includes(q) ||
           (c.website || '').toLowerCase().includes(q) ||
           (c.domain || '').toLowerCase().includes(q)
       );
@@ -255,9 +257,9 @@ function AppInner() {
     list.sort((a, b) => {
       switch (sort) {
         case 'name-asc':
-          return a.title.localeCompare(b.title);
+          return displayTitle(a).localeCompare(displayTitle(b));
         case 'name-desc':
-          return b.title.localeCompare(a.title);
+          return displayTitle(b).localeCompare(displayTitle(a));
         case 'recently-updated':
           return daysSince(a.dateLastUpdated) - daysSince(b.dateLastUpdated);
         case 'least-recently-updated':
@@ -277,17 +279,17 @@ function AppInner() {
   }, [activeComics, search, websiteFilter, dateFilter, sort]);
 
   const favorites = useMemo(
-    () => comics.filter((c) => c.isFavorite).sort((a, b) => a.title.localeCompare(b.title)),
+    () => comics.filter((c) => c.isFavorite).sort((a, b) => displayTitle(a).localeCompare(displayTitle(b))),
     [comics]
   );
 
   const availableLetters = useMemo(
-    () => new Set(visibleComics.map((c) => firstLetterOf(c.title))),
+    () => new Set(visibleComics.map((c) => firstLetterOf(displayTitle(c)))),
     [visibleComics]
   );
 
   const letteredComics = useMemo(
-    () => (letterFilter ? visibleComics.filter((c) => firstLetterOf(c.title) === letterFilter) : visibleComics),
+    () => (letterFilter ? visibleComics.filter((c) => firstLetterOf(displayTitle(c)) === letterFilter) : visibleComics),
     [visibleComics, letterFilter]
   );
 
@@ -322,9 +324,9 @@ function AppInner() {
       await reloadAll();
       const verb = result.status === 'created' ? 'added' : result.status === 'refreshed' ? 'refreshed' : 'updated';
       if (result.status === 'created' || result.status === 'updated') {
-        toast.show(`Chapter Unlocked! "${result.comic.title}" — Ch. ${result.comic.chapter}`, 'unlock');
+        toast.show(`Chapter Unlocked! "${displayTitle(result.comic)}" — Ch. ${result.comic.chapter}`, 'unlock');
       } else {
-        toast.show(`"${result.comic.title}" ${verb} — Chapter ${result.comic.chapter}.`, 'success');
+        toast.show(`"${displayTitle(result.comic)}" ${verb} — Chapter ${result.comic.chapter}.`, 'success');
       }
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'Unable to save your update. Please try again.';
@@ -356,7 +358,7 @@ function AppInner() {
       await api.deleteComic(deletingComic.id, false);
       setComics((prev) => prev.filter((c) => c.id !== deletingComic.id));
       setVaultComics((prev) => prev.filter((c) => c.id !== deletingComic.id));
-      toast.show(`"${deletingComic.title}" removed from your tracker.`, 'success');
+      toast.show(`"${displayTitle(deletingComic)}" removed from your tracker.`, 'success');
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'Unable to delete this comic. Please try again.';
       toast.show(message, 'error');
@@ -401,6 +403,8 @@ function AppInner() {
           website: item.website || '',
           domain: '',
           notes: item.notes,
+          altTitle: item.altTitle,
+          useAltTitle: item.useAltTitle,
           forceOverwrite: true,
         });
         if (result.status === 'created') created++;
@@ -540,7 +544,7 @@ function AppInner() {
       {deletingComic && (
         <ConfirmDialog
           title="Delete comic"
-          message={`Delete "${deletingComic.title}" from your tracker? This removes it from the Comics sheet; its history is kept.`}
+          message={`Delete "${displayTitle(deletingComic)}" from your tracker? This removes it from the Comics sheet; its history is kept.`}
           confirmLabel="Delete"
           danger
           onConfirm={handleDeleteConfirm}

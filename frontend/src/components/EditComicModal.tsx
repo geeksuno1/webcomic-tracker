@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { Comic } from '../types/Comic';
 import { COMIC_STATUSES, STATUS_LABELS } from '../types/Comic';
 import { HistoryIcon, LockIcon, PencilIcon, TrashIcon } from './Icons';
@@ -18,6 +18,8 @@ interface Props {
 
 export function EditComicModal({ comic, onSave, onClose, onHistory, onDelete, busy, vaultAvailable = false }: Props) {
   const [title, setTitle] = useState(comic.title);
+  const [altTitle, setAltTitle] = useState(comic.altTitle || '');
+  const [useAlt, setUseAlt] = useState(!!comic.useAltTitle);
   const [chapter, setChapter] = useState(String(comic.chapter));
   const [url, setUrl] = useState(comic.url);
   const [website, setWebsite] = useState(comic.website);
@@ -33,7 +35,8 @@ export function EditComicModal({ comic, onSave, onClose, onHistory, onDelete, bu
     const chapterNum = parseFloat(chapter);
     if (!title.trim() || isNaN(chapterNum) || !url.trim()) return;
     await onSave({
-      title: title.trim(), chapter: chapterNum, url: url.trim(), website: website.trim(),
+      title: title.trim(), altTitle: altTitle.trim(), useAltTitle: useAlt && !!altTitle.trim(),
+      chapter: chapterNum, url: url.trim(), website: website.trim(),
       dateLastUpdated, notes: notes.trim(), coverImageUrl: coverImageUrl.trim(), status, coverPosition,
       // Only sent when it actually changed, so ordinary edits never touch vault membership.
       ...(vaultAvailable && inVault !== !!comic.inVault ? { inVault } : {}),
@@ -85,7 +88,27 @@ export function EditComicModal({ comic, onSave, onClose, onHistory, onDelete, bu
               onChange={setCoverPosition}
             />
           )}
-          <LabeledInput label="Title" value={title} onChange={setTitle} required />
+          <LabeledInput label="URL Title" value={title} onChange={setTitle} required />
+          <p className="-mt-1.5 text-xs text-slate-400 dark:text-slate-500">
+            Taken from the chapter link. New chapters are matched to this series by it, so only change it if the link's title changed.
+          </p>
+          <div>
+            <LabeledInput label="Alternate Title (optional)" value={altTitle} onChange={setAltTitle} />
+            <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+              Your own name for the series, used for display only.
+            </p>
+          </div>
+          <fieldset className="rounded-lg border border-ink/10 p-2.5 dark:border-white/10">
+            <legend className="px-1 text-xs font-medium text-slate-500 dark:text-slate-400">Show this title in the app</legend>
+            <label className="flex cursor-pointer items-center gap-2 py-0.5 text-sm text-slate-800 dark:text-slate-100">
+              <input type="radio" name="title-mode" className="h-4 w-4 accent-accent" checked={!useAlt || !altTitle.trim()} onChange={() => setUseAlt(false)} />
+              <span className="min-w-0 truncate">URL title — {title.trim() || '…'}</span>
+            </label>
+            <label className={`flex items-center gap-2 py-0.5 text-sm ${altTitle.trim() ? 'cursor-pointer text-slate-800 dark:text-slate-100' : 'cursor-not-allowed text-slate-400 dark:text-slate-500'}`}>
+              <input type="radio" name="title-mode" className="h-4 w-4 accent-accent" disabled={!altTitle.trim()} checked={useAlt && !!altTitle.trim()} onChange={() => setUseAlt(true)} />
+              <span className="min-w-0 truncate">Alternate title{altTitle.trim() ? ` — ${altTitle.trim()}` : ' (type one above first)'}</span>
+            </label>
+          </fieldset>
           <LabeledInput label="Chapter" type="number" step="0.5" value={chapter} onChange={setChapter} required />
           <LabeledInput label="Latest Chapter Link" type="url" value={url} onChange={setUrl} required />
           <LabeledInput label="Source" value={website} onChange={setWebsite} />
@@ -156,10 +179,12 @@ function LabeledInput({
 }: {
   label: string; value: string; onChange: (v: string) => void; type?: string; step?: string; required?: boolean;
 }) {
+  const id = useId();
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{label}</label>
+      <label htmlFor={id} className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{label}</label>
       <input
+        id={id}
         className="input"
         type={type}
         step={step}

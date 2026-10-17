@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { displayTitle } from '../types/Comic';
 import type { Comic } from '../types/Comic';
 import type { HistoryEntry } from '../types/HistoryEntry';
 import { formatDateReadable } from '../services/normalization';
@@ -30,7 +31,7 @@ export function HistoryModal({ comic, onClose }: Props) {
       <div className="card animate-in w-full max-w-lg p-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h3 className="flex items-center gap-1.5 text-base font-semibold text-slate-900 dark:text-white">
-            <HistoryIcon className="h-4 w-4 text-accent" /> {comic.title}
+            <HistoryIcon className="h-4 w-4 text-accent" /> {displayTitle(comic)}
           </h3>
           <button type="button" className="btn btn-secondary !p-2" onClick={onClose} aria-label="Close">
             <XIcon className="h-4 w-4" />

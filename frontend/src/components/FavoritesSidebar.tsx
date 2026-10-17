@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { displayTitle } from '../types/Comic';
 import type { Comic } from '../types/Comic';
 import { ExternalLinkIcon, ImageOffIcon, ListIcon, PencilIcon, SmallGridIcon, StarIcon, GridIcon } from './Icons';
 import { StatusBadge } from './ComicTable';
@@ -153,8 +154,8 @@ function FavoriteListRow({
       className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-1.5 py-1.5 text-left transition-colors hover:bg-accent/5 dark:hover:bg-accent/10"
     >
       <CoverImg comic={comic} className="h-8 w-8 shrink-0 overflow-hidden rounded-md" />
-      <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800 dark:text-slate-100" title={comic.title}>
-        {comic.title}
+      <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800 dark:text-slate-100" title={displayTitle(comic)}>
+        {displayTitle(comic)}
       </span>
       <span className="chip shrink-0 bg-accent/10 font-semibold text-accent">Ch. {comic.chapter}</span>
       <FavoriteStarButton comic={comic} onToggleFavorite={onToggleFavorite} className="shrink-0" />
@@ -181,8 +182,8 @@ function FavoriteSmallTile({
         </span>
         <span className="chip absolute bottom-1 left-1 bg-accent/90 font-semibold text-white">Ch. {comic.chapter}</span>
       </div>
-      <div className="truncate px-1.5 py-1 text-xs font-semibold text-slate-800 dark:text-slate-100" title={comic.title}>
-        {comic.title}
+      <div className="truncate px-1.5 py-1 text-xs font-semibold text-slate-800 dark:text-slate-100" title={displayTitle(comic)}>
+        {displayTitle(comic)}
       </div>
     </div>
   );
@@ -206,8 +207,8 @@ function FavoriteMediumTile({
       </button>
 
       <div className="min-w-0 flex-1 p-2.5">
-        <div className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100" title={comic.title}>
-          {comic.title}
+        <div className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100" title={displayTitle(comic)}>
+          {displayTitle(comic)}
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
           <span className="chip bg-accent/10 font-semibold text-accent">Ch. {comic.chapter}</span>

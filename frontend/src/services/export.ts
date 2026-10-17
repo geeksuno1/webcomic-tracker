@@ -8,11 +8,11 @@ export function exportComicsAsJson(comics: Comic[]): void {
 export function exportComicsAsCsv(comics: Comic[]): void {
   const headers = [
     'ID', 'Webcomic Name', 'Latest Completed Chapter', 'Latest Chapter URL',
-    'Website', 'Domain', 'Date First Added', 'Date Last Updated', 'Notes', 'Normalized Title',
+    'Website', 'Domain', 'Date First Added', 'Date Last Updated', 'Notes', 'Normalized Title', 'Alt Title', 'Use Alt Title',
   ];
   const rows = comics.map((c) => [
     c.id, c.title, c.chapter, c.url, c.website, c.domain,
-    c.dateFirstAdded, c.dateLastUpdated, c.notes, c.normalizedTitle,
+    c.dateFirstAdded, c.dateLastUpdated, c.notes, c.normalizedTitle, c.altTitle ?? '', !!c.useAltTitle,
   ]);
   const csv = [headers, ...rows]
     .map((row) => row.map(csvEscape).join(','))
@@ -46,6 +46,8 @@ export interface ImportedComic {
   url: string;
   website?: string;
   notes?: string;
+  altTitle?: string;
+  useAltTitle?: boolean;
 }
 
 /** Parses an imported JSON file's text content into a normalized array. */
@@ -58,5 +60,7 @@ export function parseImportedJson(text: string): ImportedComic[] {
     url: String(item.url ?? item['Latest Chapter URL'] ?? '').trim(),
     website: item.website ?? item['Website'] ?? undefined,
     notes: item.notes ?? item['Notes'] ?? undefined,
+    altTitle: item.altTitle ?? item['Alt Title'] ?? undefined,
+    useAltTitle: item.useAltTitle ?? (item['Use Alt Title'] === true || item['Use Alt Title'] === 'true' ? true : undefined),
   })).filter((c) => c.title && c.url && !isNaN(c.chapter));
 }

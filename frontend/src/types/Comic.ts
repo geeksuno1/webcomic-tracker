@@ -28,6 +28,15 @@ export interface Comic {
   coverPosition: number;
   /** True for titles kept in the password-protected vault. Only ever present while the vault is unlocked. */
   inVault?: boolean;
+  /** Optional display-only name. `title` always stays the URL-derived title used to match new chapters. */
+  altTitle?: string;
+  /** When true (and altTitle is set) the app shows altTitle instead of the URL title. */
+  useAltTitle?: boolean;
+}
+
+/** The name to show for a comic: the alternate title if chosen, otherwise the URL-derived title. */
+export function displayTitle(c: Pick<Comic, 'title' | 'altTitle' | 'useAltTitle'>): string {
+  return c.useAltTitle && c.altTitle && c.altTitle.trim() ? c.altTitle.trim() : c.title;
 }
 
 export interface ParsedChapterInfo {

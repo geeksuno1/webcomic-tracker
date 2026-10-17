@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { displayTitle } from '../types/Comic';
 import { parseChapterUrl, isLikelyUrl } from '../services/parser';
 import { api } from '../services/api';
 import { normalizeTitle } from '../services/normalization';
@@ -150,7 +151,7 @@ export function AddComicForm({ comics, onSubmit, busy, vaultMode = false }: Prop
             </div>
           ) : (
             <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
-              This will update <span className="font-medium text-slate-700 dark:text-slate-200">{matchedExisting?.title}</span> to the new chapter. Its existing cover is kept — edit it later from the comic's row if you want to change it.
+              This will update <span className="font-medium text-slate-700 dark:text-slate-200">{matchedExisting ? displayTitle(matchedExisting) : ''}</span> to the new chapter. Its existing cover is kept — edit it later from the comic's row if you want to change it.
             </div>
           )}
 
